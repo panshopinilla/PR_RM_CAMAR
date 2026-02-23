@@ -105,7 +105,7 @@
         interaction-prompt="none"
         ar-placement="floor"
         ar-scale="auto"
-        scale="0.01 0.01 0.01" 
+        scale="0.05 0.05 0.05" 
         shadow-intensity="1">
 
         <div id="overlay-instrucciones">
@@ -125,27 +125,28 @@
         const overlay = document.getElementById('overlay-instrucciones');
         const boton = document.getElementById('boton-activar-ar');
 
-        // 1. Avisar si el celular no es compatible con AR
+        // 1. Avisar si el celular no es compatible
         viewer.addEventListener('load', () => {
             if (!viewer.canActivateAR) {
-               overlay.innerHTML = "<h1>⚠️ Lo sentimos</h1><p>Tu dispositivo o navegador no soporta Realidad Aumentada web.</p>";
-               boton.style.display = 'none';
+               if(overlay) overlay.innerHTML = "<h1>⚠️ Lo sentimos</h1><p>Tu dispositivo o navegador no soporta Realidad Aumentada web.</p>";
+               if(boton) boton.style.display = 'none';
             }
         });
 
-        // 2. EL PARCHE: Ocultar los textos a la fuerza apenas se toca el botón
-        boton.addEventListener('click', () => {
-            overlay.style.display = 'none';
-            boton.style.display = 'none';
-        });
-
-        // 3. Volver a mostrar las instrucciones si el usuario cierra la cámara AR
-        viewer.addEventListener('ar-status', (event) => {
-            if (event.detail.status === 'not-presenting') {
-                overlay.style.display = 'flex';
-                boton.style.display = 'flex';
-            }
-        });
+        // 2. Destruir los textos para siempre al tocar el botón
+        if(boton) {
+            boton.addEventListener('click', () => {
+                // Los ocultamos visualmente al instante
+                overlay.style.display = 'none';
+                boton.style.display = 'none';
+                
+                // Y los eliminamos por completo del código para que el celular no pueda revivirlos
+                setTimeout(() => {
+                    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                    if (boton && boton.parentNode) boton.parentNode.removeChild(boton);
+                }, 100);
+            });
+        }
     </script>
 
 </body>
