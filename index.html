@@ -133,20 +133,16 @@
             }
         });
 
-        // 2. Destruir los textos para siempre al tocar el botón
-        if(boton) {
-            boton.addEventListener('click', () => {
-                // Los ocultamos visualmente al instante
+        // 2. La forma correcta: Ocultar SOLO cuando la cámara ya está funcionando
+        viewer.addEventListener('ar-status', (event) => {
+            if (event.detail.status === 'session-started') {
+                // ¡La cámara se abrió con éxito! Ocultamos el overlay negro.
                 overlay.style.display = 'none';
-                boton.style.display = 'none';
-                
-                // Y los eliminamos por completo del código para que el celular no pueda revivirlos
-                setTimeout(() => {
-                    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-                    if (boton && boton.parentNode) boton.parentNode.removeChild(boton);
-                }, 100);
-            });
-        }
+            } else if (event.detail.status === 'not-presenting') {
+                // Si el usuario cierra la cámara, volvemos a mostrar las instrucciones
+                overlay.style.display = 'flex';
+            }
+        });
     </script>
 
 </body>
