@@ -4,97 +4,33 @@
     <meta charset="utf-8">
     <title>Cámara AR - Tambo de Camar</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
     <style>
-        /* Reset de márgenes y fondo oscuro */
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            background-color: #000; 
-            font-family: 'Helvetica', sans-serif; 
-            overflow: hidden; 
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; font-family: 'Helvetica', sans-serif; overflow: hidden; }
         
-        /* Configuración principal del visor 3D */
-        model-viewer { 
-            width: 100%; 
-            height: 100%;
-            --poster-color: transparent;
-            background-color: transparent;
-        }
+        model-viewer { width: 100%; height: 100%; --poster-color: transparent; background-color: transparent; }
 
-        /* Diseño de la pantalla de instrucciones (Overlay) */
         #overlay-instrucciones {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            color: white; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            text-align: center;
-            padding: 30px; 
-            box-sizing: border-box; 
-            z-index: 10;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); color: white; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            padding: 30px; box-sizing: border-box; z-index: 10;
         }
 
         #overlay-instrucciones h1 { margin: 0 0 15px 0; font-size: 24px; color: #EB6242; }
         #overlay-instrucciones p { font-size: 16px; line-height: 1.5; margin-bottom: 30px; max-width: 80%; color: #ccc; }
         .paso-icono { font-size: 40px; margin-bottom: 20px; }
 
-        /* Diseño del botón personalizado para activar AR */
         #boton-activar-ar {
-            background-color: #EB6242; 
-            color: white;
-            border: none; 
-            border-radius: 50px;
-            padding: 18px 40px; 
-            font-size: 18px; 
-            font-weight: bold;
-            box-shadow: 0 4px 20px rgba(235, 98, 66, 0.5);
-            cursor: pointer; 
-            transition: transform 0.2s;
-            position: absolute; 
-            bottom: 15%; 
-            left: 50%; 
-            transform: translateX(-50%);
-            z-index: 20; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px;
-            white-space: nowrap;
-        }
-        #boton-activar-ar:active { transform: translateX(-50%) scale(0.95); }
-
-        /* Botón superior para cerrar la ventana */
-        .btn-close { 
-            position: absolute; 
-            top: 20px; 
-            left: 20px; 
-            background: rgba(255,255,255,0.2); 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 30px; 
-            text-decoration: none; 
-            font-size: 14px; 
-            z-index: 30; 
-            backdrop-filter: blur(5px); 
+            background-color: #EB6242; color: white; border: none; border-radius: 50px;
+            padding: 18px 40px; font-size: 18px; font-weight: bold;
+            box-shadow: 0 4px 20px rgba(235, 98, 66, 0.5); cursor: pointer; transition: transform 0.2s;
+            position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
+            z-index: 20; display: flex; align-items: center; gap: 10px; white-space: nowrap;
         }
 
-        /* MAGIA CSS: Ocultar instrucciones y botón principal cuando se abre la cámara AR */
-        model-viewer[ar-status="session-started"] > #overlay-instrucciones,
-        model-viewer[ar-status="session-started"] > #boton-activar-ar {
-            display: none !important;
-        }
+        .btn-close { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 15px; border-radius: 30px; text-decoration: none; font-size: 14px; z-index: 30; backdrop-filter: blur(5px); }
     </style>
 </head>
 <body>
@@ -102,20 +38,21 @@
     <a href="#" onclick="window.close()" class="btn-close">✕ Cerrar</a>
 
     <model-viewer 
-        src="./assets/models/montado_general_optimizado-1.glb" 
+        id="visor-ar"
+        src="./assets/models/tambo_web.glb" 
         alt="Maqueta Tambo de Camar"
         ar 
         ar-modes="webxr scene-viewer quick-look"
         camera-controls
         interaction-prompt="none"
         ar-placement="floor"
-        ar-scale="fixed" 
+        ar-scale="auto" 
         shadow-intensity="1">
 
         <div id="overlay-instrucciones">
             <div class="paso-icono">📱⬇️</div>
             <h1>Modo Maqueta AR</h1>
-            <p>1. Activa la cámara.<br>2. Apunta al suelo cerca de la maqueta.<br>3. Arrastra el modelo con el dedo para superponerlo.</p>
+            <p>1. Activa la cámara.<br>2. Apunta al suelo cerca de la maqueta.<br>3. <b>Usa dos dedos para achicar el modelo</b> y acomódalo sobre el físico.</p>
         </div>
 
         <button slot="ar-button" id="boton-activar-ar">
@@ -125,16 +62,30 @@
     </model-viewer>
 
     <script>
-        const viewer = document.querySelector('model-viewer');
+        const viewer = document.getElementById('visor-ar');
+        const overlay = document.getElementById('overlay-instrucciones');
+        const boton = document.getElementById('boton-activar-ar');
+
+        // Detectar si AR no es compatible
         viewer.addEventListener('load', () => {
             if (!viewer.canActivateAR) {
-               document.getElementById('overlay-instrucciones').innerHTML = "<h1>⚠️ Lo sentimos</h1><p>Tu dispositivo o navegador actual no soporta Realidad Aumentada web.</p>";
-               document.getElementById('boton-activar-ar').style.display = 'none';
+               overlay.innerHTML = "<h1>⚠️ Lo sentimos</h1><p>Tu dispositivo no soporta Realidad Aumentada web.</p>";
+               boton.style.display = 'none';
+            }
+        });
+
+        // Ocultar las instrucciones a la fuerza cuando arranca la cámara
+        viewer.addEventListener('ar-status', (event) => {
+            if(event.detail.status === 'session-started') {
+                overlay.style.display = 'none';
+                boton.style.display = 'none';
+            } else if (event.detail.status === 'not-presenting') {
+                // Si el usuario cierra la cámara, volvemos a mostrar las instrucciones
+                overlay.style.display = 'flex';
+                boton.style.display = 'flex';
             }
         });
     </script>
 
 </body>
-
 </html>
-
