@@ -100,7 +100,7 @@
         src="./assets/models/montado_general_optimizado-1.glb" 
         alt="Maqueta Tambo de Camar"
         ar 
-        ar-modes="webxr scene-viewer quick-look"
+        ar-modes="scene-viewer webxr quick-look" 
         camera-controls
         interaction-prompt="auto"
         ar-placement="floor"
@@ -110,7 +110,7 @@
         <div id="overlay-instrucciones">
             <div class="paso-icono">📱⬇️</div>
             <h1>Modo Maqueta AR</h1>
-            <p>1. Activa la cámara.<br>2. Apunta al suelo cerca de la maqueta.<br>3. <b>Usa dos dedos para achicar el modelo</b> y acomódalo sobre el físico.</p>
+            <p>1. Activa la cámara.<br>2. <b>Apunta a una superficie con textura (como tu teclado)</b>.<br>3. Usa tus dedos para achicar, girar y mover el modelo.</p>
         </div>
 
         <button slot="ar-button" id="boton-activar-ar">
@@ -132,18 +132,21 @@
             }
         });
 
-        // 2. La forma correcta: Ocultar SOLO cuando la cámara ya está funcionando
-        viewer.addEventListener('ar-status', (event) => {
-            if (event.detail.status === 'session-started') {
-                // ¡La cámara se abrió con éxito! Ocultamos el overlay negro.
+        // 2. Destruir los textos para siempre al tocar el botón
+        if(boton) {
+            boton.addEventListener('click', () => {
+                // Los ocultamos visualmente al instante
                 overlay.style.display = 'none';
-            } else if (event.detail.status === 'not-presenting') {
-                // Si el usuario cierra la cámara, volvemos a mostrar las instrucciones
-                overlay.style.display = 'flex';
-            }
-        });
+                boton.style.display = 'none';
+                
+                // Y los eliminamos por completo del código para que el celular no pueda revivirlos
+                setTimeout(() => {
+                    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                    if (boton && boton.parentNode) boton.parentNode.removeChild(boton);
+                }, 100);
+            });
+        }
     </script>
 
 </body>
-
 </html>
