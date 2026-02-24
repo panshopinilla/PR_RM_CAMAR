@@ -2,151 +2,466 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <title>Cámara AR - Tambo de Camar</title>
+    <title>AR · Tambo de Camar</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
 
     <style>
-        /* Reset de márgenes y fondo oscuro */
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            background-color: #000; 
-            font-family: 'Helvetica', sans-serif; 
-            overflow: hidden; 
+        :root {
+            --naranja: #EB6242;
+            --naranja-glow: rgba(235, 98, 66, 0.4);
+            --dorado: #C8973A;
+            --crema: #F5ECD7;
+            --oscuro: #0A0806;
+            --gris-suave: rgba(255,255,255,0.08);
         }
-        
-        /* Configuración principal del visor 3D */
-        model-viewer { 
-            width: 100%; 
-            height: 100%;
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: var(--oscuro);
+            font-family: 'Lato', sans-serif;
+            overflow: hidden;
+        }
+
+        /* ── MODEL VIEWER ── */
+        model-viewer {
+            width: 100%; height: 100%;
             --poster-color: transparent;
             background-color: transparent;
         }
 
-        /* Diseño de la pantalla de instrucciones (Overlay) */
-        #overlay-instrucciones {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            color: white; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            text-align: center;
-            padding: 30px; 
-            box-sizing: border-box; 
-            z-index: 10;
+        /* ── PANTALLA DE INSTRUCCIONES ── */
+        #pantalla-inicio {
+            position: fixed; inset: 0;
+            background: var(--oscuro);
+            display: flex; flex-direction: column;
+            justify-content: flex-end; align-items: center;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
         }
 
-        #overlay-instrucciones h1 { margin: 0 0 15px 0; font-size: 24px; color: #EB6242; }
-        #overlay-instrucciones p { font-size: 16px; line-height: 1.5; margin-bottom: 30px; max-width: 80%; color: #ccc; }
-        .paso-icono { font-size: 40px; margin-bottom: 20px; }
+        #pantalla-inicio.oculto {
+            opacity: 0;
+            transform: scale(1.04);
+            pointer-events: none;
+        }
 
-        /* Diseño del botón personalizado para activar AR */
+        /* Imagen de instrucciones - ocupa todo el fondo */
+        #pantalla-inicio .bg-imagen {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0.92;
+        }
+
+        /* Gradiente para que el botón sea legible */
+        #pantalla-inicio::after {
+            content: '';
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 35%;
+            background: linear-gradient(to top, var(--oscuro) 30%, transparent);
+            pointer-events: none;
+        }
+
+        /* ── BOTÓN PRINCIPAL ── */
         #boton-activar-ar {
-            background-color: #EB6242; 
+            position: relative; z-index: 10;
+            margin-bottom: 48px;
+            background: var(--naranja);
             color: white;
-            border: none; 
+            border: none;
             border-radius: 50px;
-            padding: 18px 40px; 
-            font-size: 18px; 
-            font-weight: bold;
-            box-shadow: 0 4px 20px rgba(235, 98, 66, 0.5);
-            cursor: pointer; 
-            transition: transform 0.2s;
-            position: absolute; 
-            bottom: 15%; 
-            left: 50%; 
-            transform: translateX(-50%);
-            z-index: 20; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px;
+            padding: 18px 44px;
+            font-family: 'Cinzel', serif;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 0 0 0 var(--naranja-glow);
+            animation: pulso 2.4s ease-in-out infinite;
+            transition: transform 0.15s, box-shadow 0.15s;
+            display: flex; align-items: center; gap: 12px;
             white-space: nowrap;
         }
-        #boton-activar-ar:active { transform: translateX(-50%) scale(0.95); }
 
-        /* Botón superior para cerrar la ventana */
-        .btn-close { 
-            position: absolute; 
-            top: 20px; 
-            left: 20px; 
-            background: rgba(255,255,255,0.2); 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 30px; 
-            text-decoration: none; 
-            font-size: 14px; 
-            z-index: 30; 
-            backdrop-filter: blur(5px); 
+        #boton-activar-ar:active {
+            transform: scale(0.96);
+            box-shadow: 0 2px 8px var(--naranja-glow);
+        }
+
+        @keyframes pulso {
+            0%, 100% { box-shadow: 0 0 0 0 var(--naranja-glow), 0 8px 30px var(--naranja-glow); }
+            50%       { box-shadow: 0 0 0 14px transparent, 0 8px 30px var(--naranja-glow); }
+        }
+
+        /* Ícono de cámara animado */
+        .icono-camara {
+            width: 22px; height: 22px;
+            position: relative; display: inline-block;
+        }
+        .icono-camara svg { width: 100%; height: 100%; fill: white; }
+
+        /* ── OVERLAY AR (visible mientras el AR está activo) ── */
+        #hud-ar {
+            position: fixed; inset: 0;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #hud-ar.visible { opacity: 1; }
+
+        /* Esquinas decorativas tipo visor */
+        .esquina {
+            position: absolute;
+            width: 32px; height: 32px;
+            border-color: var(--naranja);
+            border-style: solid;
+            opacity: 0.8;
+        }
+        .esquina.tl { top: 24px; left: 24px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+        .esquina.tr { top: 24px; right: 24px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+        .esquina.bl { bottom: 24px; left: 24px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+        .esquina.br { bottom: 24px; right: 24px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+        /* Etiqueta nombre del sitio */
+        #etiqueta-sitio {
+            position: absolute; bottom: 36px; left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        /* ── MENSAJE DE GUÍA (escaneo de superficie) ── */
+        #mensaje-guia {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 60;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            padding: 0 32px;
+        }
+
+        #mensaje-guia.visible { opacity: 1; }
+
+        .guia-anillo {
+            width: 80px; height: 80px;
+            border: 2px solid var(--dorado);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            position: relative;
+            animation: girar 3s linear infinite;
+        }
+
+        .guia-anillo::before {
+            content: '';
+            position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+            width: 8px; height: 8px;
+            background: var(--dorado);
+            border-radius: 50%;
+        }
+
+        @keyframes girar { to { transform: rotate(360deg); } }
+
+        .guia-texto {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.6;
+        }
+
+        /* ── BOTÓN CERRAR ── */
+        #btn-cerrar {
+            position: fixed; top: 24px; left: 20px;
+            background: rgba(0,0,0,0.55);
+            color: rgba(255,255,255,0.85);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-family: 'Lato', sans-serif;
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-decoration: none;
+            z-index: 200;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #btn-cerrar:active { background: rgba(0,0,0,0.8); }
+
+        /* ── TOAST DE ERROR ── */
+        #toast-error {
+            position: fixed; bottom: 40px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(20,10,5,0.92);
+            border: 1px solid var(--naranja);
+            color: var(--crema);
+            padding: 16px 24px;
+            border-radius: 16px;
+            font-family: 'Lato', sans-serif;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.5;
+            z-index: 300;
+            opacity: 0;
+            transition: opacity 0.4s, transform 0.4s;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+        }
+        #toast-error.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── LOADER DE MODELO ── */
+        #loader-modelo {
+            position: fixed; inset: 0;
+            background: var(--oscuro);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        #loader-modelo.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .loader-bar-wrap {
+            width: 180px; height: 2px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 24px;
+        }
+        .loader-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--dorado), var(--naranja));
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .loader-titulo {
+            font-family: 'Cinzel', serif;
+            font-size: 13px;
+            letter-spacing: 4px;
+            color: var(--dorado);
+            text-transform: uppercase;
+            margin-top: 16px;
         }
     </style>
 </head>
 <body>
 
-    <a href="#" onclick="window.close()" class="btn-close">✕ Cerrar</a>
+    <!-- BOTÓN CERRAR -->
+    <a id="btn-cerrar" onclick="window.close(); history.back();">✕ Cerrar</a>
 
-    <model-viewer 
+    <!-- LOADER DE MODELO -->
+    <div id="loader-modelo">
+        <div style="text-align:center">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="opacity:0.6">
+                <rect x="4" y="20" width="40" height="3" rx="1.5" fill="#C8973A"/>
+                <rect x="16" y="8" width="16" height="3" rx="1.5" fill="#C8973A"/>
+                <rect x="16" y="37" width="16" height="3" rx="1.5" fill="#C8973A"/>
+                <rect x="4" y="8" width="8" height="8" rx="1" fill="#EB6242"/>
+                <rect x="36" y="8" width="8" height="8" rx="1" fill="#EB6242"/>
+                <rect x="4" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
+                <rect x="36" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
+            </svg>
+        </div>
+        <div class="loader-titulo">Cargando modelo</div>
+        <div class="loader-bar-wrap">
+            <div class="loader-bar-fill" id="barra-progreso"></div>
+        </div>
+    </div>
+
+    <!-- MODEL VIEWER -->
+    <model-viewer
         id="visor-ar"
-        src="./assets/models/Tambo_nuevo_con_base_seccionado_Optimizado.glb" 
+        src="./assets/models/montado_general_optimizado-1.glb"
         alt="Maqueta Tambo de Camar"
-        ar 
-        ar-modes="scene-viewer webxr quick-look" 
+        ar
+        ar-modes="scene-viewer webxr quick-look"
         camera-controls
-        interaction-prompt="auto"
+        interaction-prompt="none"
         ar-placement="floor"
         ar-scale="auto"
-        shadow-intensity="1">
+        shadow-intensity="1.2"
+        shadow-softness="0.8"
+        environment-image="neutral"
+        exposure="1.1">
 
-        <div id="overlay-instrucciones">
-            <div class="paso-icono">📱⬇️</div>
-            <h1>Modo Maqueta AR</h1>
-            <p>1. Activa la cámara.<br>2. <b>Apunta a una superficie con textura (como tu teclado)</b>.<br>3. Usa tus dedos para achicar, girar y mover el modelo.</p>
-        </div>
-
-        <button slot="ar-button" id="boton-activar-ar">
-            📸 ACTIVAR CÁMARA
-        </button>
+        <!-- Botón AR nativo del sistema (requerido por model-viewer, oculto visualmente) -->
+        <button slot="ar-button" id="ar-button-nativo" style="display:none;"></button>
 
     </model-viewer>
 
-    <script>
-        const viewer = document.getElementById('visor-ar');
-        const overlay = document.getElementById('overlay-instrucciones');
-        const boton = document.getElementById('boton-activar-ar');
+    <!-- PANTALLA DE INSTRUCCIONES -->
+    <div id="pantalla-inicio">
+        <img src="./assets/instrucciones.png" alt="Instrucciones AR" class="bg-imagen">
+        <button id="boton-activar-ar">
+            <span class="icono-camara">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zm7-12H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6.2A3 3 0 0 0 19 3.2zm-7 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                </svg>
+            </span>
+            ACTIVAR CÁMARA AR
+        </button>
+    </div>
 
-        // 1. Avisar si el celular no es compatible
+    <!-- HUD mientras AR activo -->
+    <div id="hud-ar">
+        <div class="esquina tl"></div>
+        <div class="esquina tr"></div>
+        <div class="esquina bl"></div>
+        <div class="esquina br"></div>
+        <div id="etiqueta-sitio">Tambo de Camar · Experiencia AR</div>
+    </div>
+
+    <!-- Mensaje guía de escaneo -->
+    <div id="mensaje-guia">
+        <div class="guia-anillo"></div>
+        <p class="guia-texto">Mueve la cámara lentamente<br>sobre la maqueta</p>
+    </div>
+
+    <!-- Toast de error -->
+    <div id="toast-error" id="toast">
+        ⚠️ Tu dispositivo no soporta AR.<br>
+        <span style="font-size:12px; opacity:0.7;">Prueba desde Safari en iOS o Chrome en Android.</span>
+    </div>
+
+    <script>
+        const viewer        = document.getElementById('visor-ar');
+        const pantallaInicio = document.getElementById('pantalla-inicio');
+        const boton         = document.getElementById('boton-activar-ar');
+        const arButtonNativo = document.getElementById('ar-button-nativo');
+        const hudAr         = document.getElementById('hud-ar');
+        const mensajeGuia   = document.getElementById('mensaje-guia');
+        const toastError    = document.getElementById('toast-error');
+        const loaderModelo  = document.getElementById('loader-modelo');
+        const barraProgreso = document.getElementById('barra-progreso');
+
+        // ── Mostrar loader mientras carga el modelo ──
+        loaderModelo.classList.add('visible');
+
+        viewer.addEventListener('progress', (e) => {
+            const pct = Math.round(e.detail.totalProgress * 100);
+            barraProgreso.style.width = pct + '%';
+        });
+
         viewer.addEventListener('load', () => {
+            // Ocultar loader con pequeño delay para suavizar
+            setTimeout(() => {
+                loaderModelo.style.opacity = '0';
+                setTimeout(() => {
+                    loaderModelo.classList.remove('visible');
+                    loaderModelo.style.opacity = '';
+                }, 500);
+            }, 300);
+
+            // Verificar soporte AR
             if (!viewer.canActivateAR) {
-               if(overlay) overlay.innerHTML = "<h1>⚠️ Lo sentimos</h1><p>Tu dispositivo o navegador no soporta Realidad Aumentada web.</p>";
-               if(boton) boton.style.display = 'none';
+                mostrarToast();
+                boton.style.opacity = '0.4';
+                boton.style.pointerEvents = 'none';
+                boton.textContent = '⚠️ AR no disponible';
             }
         });
 
-        // 2. Destruir los textos para siempre al tocar el botón
-        if(boton) {
-            boton.addEventListener('click', () => {
-                // Los ocultamos visualmente al instante
-                overlay.style.display = 'none';
-                boton.style.display = 'none';
-                
-                // Y los eliminamos por completo del código para que el celular no pueda revivirlos
-                setTimeout(() => {
-                    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-                    if (boton && boton.parentNode) boton.parentNode.removeChild(boton);
-                }, 100);
-            });
+        // ── Click en botón principal ──
+        boton.addEventListener('click', () => {
+            if (!viewer.canActivateAR) {
+                mostrarToast();
+                return;
+            }
+
+            // 1. Ocultar pantalla de instrucciones con animación
+            pantallaInicio.classList.add('oculto');
+
+            // 2. Mostrar guía de escaneo
+            setTimeout(() => {
+                mensajeGuia.classList.add('visible');
+
+                // 3. Disparar AR nativo del sistema
+                arButtonNativo.click();
+
+                // 4. Ocultar guía después de 4s
+                setTimeout(() => mensajeGuia.classList.remove('visible'), 4500);
+
+            }, 400);
+        });
+
+        // ── Eventos del ciclo AR ──
+        viewer.addEventListener('ar-status', (e) => {
+            const estado = e.detail.status;
+
+            if (estado === 'session-started') {
+                // AR activo → mostrar HUD
+                hudAr.classList.add('visible');
+                mensajeGuia.classList.add('visible');
+            }
+
+            if (estado === 'object-placed') {
+                // Modelo anclado → ocultar guía
+                mensajeGuia.classList.remove('visible');
+            }
+
+            if (estado === 'failed') {
+                mostrarToast();
+                hudAr.classList.remove('visible');
+                mensajeGuia.classList.remove('visible');
+                // Restaurar pantalla inicio si el AR falla
+                pantallaInicio.classList.remove('oculto');
+            }
+        });
+
+        viewer.addEventListener('ar-tracking', (e) => {
+            // Si el tracking se pierde, mostrar guía de re-escaneo
+            if (e.detail.status === 'not-tracking') {
+                mensajeGuia.classList.add('visible');
+                mensajeGuia.querySelector('.guia-texto').textContent = 
+                    'Apunta la cámara\na la maqueta de nuevo';
+            } else if (e.detail.status === 'tracking') {
+                mensajeGuia.classList.remove('visible');
+            }
+        });
+
+        // ── Al salir del AR ──
+        viewer.addEventListener('ar-status', (e) => {
+            if (e.detail.status === 'not-presenting') {
+                hudAr.classList.remove('visible');
+                mensajeGuia.classList.remove('visible');
+                // Re-mostrar pantalla instrucciones al salir
+                pantallaInicio.classList.remove('oculto');
+            }
+        });
+
+        // ── Toast de error ──
+        function mostrarToast() {
+            toastError.classList.add('visible');
+            setTimeout(() => toastError.classList.remove('visible'), 4000);
         }
     </script>
-
 </body>
 </html>
