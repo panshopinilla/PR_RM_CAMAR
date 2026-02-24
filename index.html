@@ -230,6 +230,82 @@
             transform: translateX(-50%) translateY(0);
         }
 
+        /* ── CONTROLES AR DE AJUSTE FINO ── */
+        #controles-ar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 70;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
+            background: linear-gradient(to top, rgba(5,3,2,0.95) 60%, transparent);
+            gap: 14px;
+        }
+
+        #controles-ar.visible { display: flex; }
+
+        .ctrl-fila {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 340px;
+        }
+
+        .ctrl-label {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--dorado);
+            text-transform: uppercase;
+            width: 52px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .ctrl-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 3px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .ctrl-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: var(--naranja);
+            box-shadow: 0 0 8px var(--naranja-glow);
+            cursor: pointer;
+        }
+
+        .ctrl-valor {
+            font-family: 'Lato', sans-serif;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            width: 36px;
+            text-align: left;
+            flex-shrink: 0;
+        }
+
+        /* Botón reset */
+        #btn-reset {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.6);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-family: 'Lato', sans-serif;
+            font-size: 12px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+        }
+
         /* ── LOADER DE MODELO ── */
         #loader-modelo {
             position: fixed; inset: 0;
@@ -306,7 +382,8 @@
         camera-controls
         interaction-prompt="none"
         ar-placement="floor"
-        ar-scale="auto"
+        ar-scale="fixed"
+        scale="0.034 0.034 0.034"
         shadow-intensity="1.2"
         shadow-softness="0.8"
         environment-image="neutral"
@@ -339,6 +416,23 @@
         <div id="etiqueta-sitio">Tambo de Camar · Experiencia AR</div>
     </div>
 
+    <!-- CONTROLES DE AJUSTE AR -->
+    <div id="controles-ar">
+        <div class="ctrl-fila">
+            <span class="ctrl-label">Escala</span>
+            <input type="range" class="ctrl-slider" id="slider-escala"
+                min="0.005" max="0.12" step="0.001" value="0.034">
+            <span class="ctrl-valor" id="val-escala">3.4cm</span>
+        </div>
+        <div class="ctrl-fila">
+            <span class="ctrl-label">Rotar</span>
+            <input type="range" class="ctrl-slider" id="slider-rotacion"
+                min="0" max="360" step="1" value="0">
+            <span class="ctrl-valor" id="val-rotacion">0°</span>
+        </div>
+        <button id="btn-reset">↺ Reset</button>
+    </div>
+
     <!-- Mensaje guía de escaneo -->
     <div id="mensaje-guia">
         <div class="guia-anillo"></div>
@@ -365,28 +459,46 @@
         // ── Mostrar loader mientras carga el modelo ──
         loaderModelo.classList.add('visible');
 
+        // Función central para ocultar el loader
+        function ocultarLoader() {
+            loaderModelo.style.transition = 'opacity 0.6s ease';
+            loaderModelo.style.opacity = '0';
+            setTimeout(() => {
+                loaderModelo.classList.remove('visible');
+                loaderModelo.style.opacity = '';
+            }, 600);
+        }
+
+        // TIMEOUT DE SEGURIDAD: si en 15s no cargó, ocultar igual
+        const timeoutLoader = setTimeout(() => {
+            console.warn('Timeout: ocultando loader por seguridad');
+            ocultarLoader();
+        }, 15000);
+
         viewer.addEventListener('progress', (e) => {
             const pct = Math.round(e.detail.totalProgress * 100);
             barraProgreso.style.width = pct + '%';
         });
 
         viewer.addEventListener('load', () => {
-            // Ocultar loader con pequeño delay para suavizar
-            setTimeout(() => {
-                loaderModelo.style.opacity = '0';
-                setTimeout(() => {
-                    loaderModelo.classList.remove('visible');
-                    loaderModelo.style.opacity = '';
-                }, 500);
-            }, 300);
+            clearTimeout(timeoutLoader);
+            setTimeout(ocultarLoader, 300);
 
-            // Verificar soporte AR
             if (!viewer.canActivateAR) {
                 mostrarToast();
                 boton.style.opacity = '0.4';
                 boton.style.pointerEvents = 'none';
                 boton.textContent = '⚠️ AR no disponible';
             }
+        });
+
+        // ERROR al cargar modelo (ruta incorrecta, archivo muy grande, etc.)
+        viewer.addEventListener('error', (e) => {
+            clearTimeout(timeoutLoader);
+            console.error('Error cargando modelo:', e);
+            const titulo = document.querySelector('.loader-titulo');
+            if (titulo) { titulo.textContent = '⚠️ Error al cargar modelo'; titulo.style.color = '#EB6242'; }
+            setTimeout(ocultarLoader, 2000);
         });
 
         // ── Click en botón principal ──
@@ -417,13 +529,12 @@
             const estado = e.detail.status;
 
             if (estado === 'session-started') {
-                // AR activo → mostrar HUD
                 hudAr.classList.add('visible');
                 mensajeGuia.classList.add('visible');
+                controlesAr.classList.add('visible');  // mostrar controles
             }
 
             if (estado === 'object-placed') {
-                // Modelo anclado → ocultar guía
                 mensajeGuia.classList.remove('visible');
             }
 
@@ -447,14 +558,56 @@
             }
         });
 
-        // ── Al salir del AR ──
         viewer.addEventListener('ar-status', (e) => {
             if (e.detail.status === 'not-presenting') {
                 hudAr.classList.remove('visible');
                 mensajeGuia.classList.remove('visible');
-                // Re-mostrar pantalla instrucciones al salir
+                controlesAr.classList.remove('visible');  // ocultar controles
                 pantallaInicio.classList.remove('oculto');
             }
+        });
+
+        // ── CONTROLES DE AJUSTE FINO ──
+        const controlesAr   = document.getElementById('controles-ar');
+        const sliderEscala  = document.getElementById('slider-escala');
+        const sliderRot     = document.getElementById('slider-rotacion');
+        const valEscala     = document.getElementById('val-escala');
+        const valRotacion   = document.getElementById('val-rotacion');
+        const btnReset      = document.getElementById('btn-reset');
+
+        // Escala inicial calculada para 34cm (modelo en metros reales)
+        const ESCALA_BASE = 0.034;
+        let escalaActual = ESCALA_BASE;
+        let rotacionActual = 0;
+
+        function aplicarTransformacion() {
+            const s = escalaActual;
+            const r = rotacionActual;
+            viewer.setAttribute('scale', `${s} ${s} ${s}`);
+            viewer.setAttribute('orientation', `0deg ${r}deg 0deg`);
+        }
+
+        sliderEscala.addEventListener('input', () => {
+            escalaActual = parseFloat(sliderEscala.value);
+            const cm = (escalaActual * 100).toFixed(1);
+            valEscala.textContent = cm + 'cm';
+            aplicarTransformacion();
+        });
+
+        sliderRot.addEventListener('input', () => {
+            rotacionActual = parseInt(sliderRot.value);
+            valRotacion.textContent = rotacionActual + '°';
+            aplicarTransformacion();
+        });
+
+        btnReset.addEventListener('click', () => {
+            escalaActual = ESCALA_BASE;
+            rotacionActual = 0;
+            sliderEscala.value = ESCALA_BASE;
+            sliderRot.value = 0;
+            valEscala.textContent = '3.4cm';
+            valRotacion.textContent = '0°';
+            aplicarTransformacion();
         });
 
         // ── Toast de error ──
