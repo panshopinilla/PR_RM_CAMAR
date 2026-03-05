@@ -4,442 +4,285 @@
     <meta charset="utf-8">
     <title>AR · Tambo de Camar</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
-    <!-- Preconnect para reducir latencia -->
     <link rel="preconnect" href="https://ajax.googleapis.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
-
-    <!-- Model Viewer — cargado con defer para no bloquear render -->
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --naranja: #EB6242;
+            --acento:       #40D3B7;
+            --acento-glow:  rgba(64, 211, 183, 0.35);
+            --naranja:      #EB6242;
             --naranja-glow: rgba(235, 98, 66, 0.4);
-            --dorado: #C8973A;
-            --crema: #F5ECD7;
-            --oscuro: #0A0806;
-            --gris-suave: rgba(255,255,255,0.08);
+            --dorado:       #C8973A;
+            --crema:        #F5ECD7;
+            --oscuro:       #0A0806;
         }
 
-        *, *::before, *::after { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
+        html, body {
+            width: 100%; height: 100%;
             background: var(--oscuro);
             font-family: 'Lato', sans-serif;
             overflow: hidden;
         }
 
-        /* ── MODEL VIEWER ── */
         model-viewer {
             width: 100%; height: 100%;
             --poster-color: transparent;
-            background-color: transparent;
+            background: transparent;
         }
 
-        /* ── PANTALLA DE INSTRUCCIONES ── */
+        /* ── PANTALLA INICIO ── */
         #pantalla-inicio {
             position: fixed; inset: 0;
             background: var(--oscuro);
             display: flex; flex-direction: column;
             justify-content: flex-end; align-items: center;
             z-index: 100;
-            padding-bottom: env(safe-area-inset-bottom, 20px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
+            padding-bottom: max(env(safe-area-inset-bottom), 32px);
+            transition: opacity .6s ease, transform .6s ease;
         }
-
-        #pantalla-inicio.oculto {
-            opacity: 0;
-            transform: scale(1.04);
-            pointer-events: none;
-        }
-
+        #pantalla-inicio.oculto { opacity: 0; transform: scale(1.04); pointer-events: none; }
         #pantalla-inicio .bg-imagen {
             position: absolute; inset: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
-            opacity: 0.92;
+            width: 100%; height: 100%; object-fit: cover; opacity: .92;
         }
-
         #pantalla-inicio::after {
-            content: '';
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 35%;
-            background: linear-gradient(to top, var(--oscuro) 30%, transparent);
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 38%;
+            background: linear-gradient(to top, var(--oscuro) 35%, transparent);
             pointer-events: none;
         }
 
-        /* Fallback si no hay imagen de fondo */
-        #pantalla-inicio .bg-fallback {
-            position: absolute; inset: 0;
-            background: radial-gradient(ellipse at 50% 30%, #1a1208 0%, var(--oscuro) 70%);
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        /* ── BOTÓN PRINCIPAL ── */
+        /* ── BOTÓN AR ── */
         #boton-activar-ar {
             position: relative; z-index: 10;
-            margin-bottom: 48px;
-            background: var(--naranja);
-            color: white;
-            border: none;
-            border-radius: 50px;
+            margin-bottom: 40px;
+            background: var(--naranja); color: #fff;
+            border: none; border-radius: 50px;
             padding: 18px 44px;
-            font-family: 'Cinzel', serif;
-            font-size: 15px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 0 0 0 var(--naranja-glow);
+            font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+            display: flex; align-items: center; gap: 12px; white-space: nowrap;
             animation: pulso 2.4s ease-in-out infinite;
-            transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
-            display: flex; align-items: center; gap: 12px;
-            white-space: nowrap;
+            transition: transform .15s, opacity .3s;
         }
-
-        #boton-activar-ar:active { transform: scale(0.96); }
-        #boton-activar-ar.cargando {
-            opacity: 0.6;
-            pointer-events: none;
-            animation: none;
-        }
-        #boton-activar-ar.sin-ar {
-            opacity: 0.4;
-            pointer-events: none;
-            animation: none;
-            font-size: 13px;
-        }
+        #boton-activar-ar:active   { transform: scale(.96); }
+        #boton-activar-ar.cargando { opacity: .55; pointer-events: none; animation: none; }
+        #boton-activar-ar.sin-ar   { opacity: .4;  pointer-events: none; animation: none; font-size: 13px; }
 
         @keyframes pulso {
-            0%, 100% { box-shadow: 0 0 0 0 var(--naranja-glow), 0 8px 30px var(--naranja-glow); }
-            50%       { box-shadow: 0 0 0 14px transparent, 0 8px 30px var(--naranja-glow); }
+            0%,100% { box-shadow: 0 0 0 0 var(--naranja-glow), 0 8px 28px var(--naranja-glow); }
+            50%     { box-shadow: 0 0 0 14px transparent,      0 8px 28px var(--naranja-glow); }
         }
 
-        .icono-camara { width: 22px; height: 22px; display: inline-flex; align-items: center; }
-        .icono-camara svg { width: 100%; height: 100%; fill: white; }
-
-        /* ── HUD AR ── */
-        #hud-ar {
-            position: fixed; inset: 0;
-            pointer-events: none;
-            z-index: 50;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-        #hud-ar.visible { opacity: 1; }
-
-        .esquina {
-            position: absolute;
-            width: 32px; height: 32px;
-            border-color: var(--naranja);
-            border-style: solid;
-            opacity: 0.8;
-        }
-        .esquina.tl { top: 24px; left: 24px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-        .esquina.tr { top: 24px; right: 24px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-        .esquina.bl { bottom: 24px; left: 24px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-        .esquina.br { bottom: 24px; right: 24px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
-
-        #etiqueta-sitio {
-            position: absolute; bottom: 36px; left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Cinzel', serif;
-            font-size: 12px;
-            letter-spacing: 3px;
-            color: rgba(255,255,255,0.6);
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-
-        /* ── MENSAJE GUÍA ── */
-        #mensaje-guia {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 60;
-            text-align: center;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            padding: 0 32px;
-        }
-        #mensaje-guia.visible { opacity: 1; }
-
-        .guia-anillo {
-            width: 80px; height: 80px;
-            border: 2px solid var(--dorado);
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            position: relative;
-            animation: girar 3s linear infinite;
-        }
-        .guia-anillo::before {
-            content: '';
-            position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
-            width: 8px; height: 8px;
-            background: var(--dorado);
-            border-radius: 50%;
-        }
-        @keyframes girar { to { transform: rotate(360deg); } }
-
-        .guia-texto {
-            font-family: 'Lato', sans-serif;
-            font-weight: 300;
-            font-size: 14px;
-            letter-spacing: 1.5px;
-            color: rgba(255,255,255,0.85);
-            line-height: 1.6;
-        }
-
-        /* ── BOTÓN CERRAR ── */
-        #btn-cerrar {
-            position: fixed; top: 24px; left: 20px;
-            background: rgba(0,0,0,0.55);
-            color: rgba(255,255,255,0.85);
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 10px 18px;
-            border-radius: 30px;
-            font-family: 'Lato', sans-serif;
-            font-size: 13px;
-            letter-spacing: 1px;
-            text-decoration: none;
-            z-index: 200;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            cursor: pointer;
-            border: none;
-            transition: background 0.2s;
-        }
-        #btn-cerrar:active { background: rgba(0,0,0,0.8); }
-
-        /* ── TOAST ── */
-        #toast-error {
-            position: fixed; bottom: 40px; left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: rgba(20,10,5,0.92);
-            border: 1px solid var(--naranja);
-            color: var(--crema);
-            padding: 16px 24px;
-            border-radius: 16px;
-            font-family: 'Lato', sans-serif;
-            font-size: 14px;
-            text-align: center;
-            line-height: 1.5;
-            z-index: 300;
-            opacity: 0;
-            transition: opacity 0.4s, transform 0.4s;
-            max-width: 300px;
-            backdrop-filter: blur(10px);
-            pointer-events: none;
-        }
-        #toast-error.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-            pointer-events: all;
-        }
-
-        /* ── CONTROLES AR ── */
-        #controles-ar {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            z-index: 70;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            padding: 16px 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
-            background: linear-gradient(to top, rgba(5,3,2,0.95) 60%, transparent);
-            gap: 14px;
-        }
-        #controles-ar.visible { display: flex; }
-
-        .ctrl-fila {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-            max-width: 340px;
-        }
-        .ctrl-label {
-            font-family: 'Cinzel', serif;
-            font-size: 10px;
-            letter-spacing: 2px;
-            color: var(--dorado);
-            text-transform: uppercase;
-            width: 52px;
-            text-align: right;
-            flex-shrink: 0;
-        }
-        .ctrl-slider {
-            flex: 1;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 3px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 2px;
-            outline: none;
-        }
-        .ctrl-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 22px; height: 22px;
-            border-radius: 50%;
-            background: var(--naranja);
-            box-shadow: 0 0 8px var(--naranja-glow);
-            cursor: pointer;
-        }
-        .ctrl-valor {
-            font-family: 'Lato', sans-serif;
-            font-size: 11px;
-            color: rgba(255,255,255,0.5);
-            width: 36px;
-            text-align: left;
-            flex-shrink: 0;
-        }
-        #btn-reset {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: rgba(255,255,255,0.6);
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-family: 'Lato', sans-serif;
-            font-size: 12px;
-            letter-spacing: 1px;
-            cursor: pointer;
-            backdrop-filter: blur(6px);
-        }
+        .icono-camara { width: 22px; height: 22px; display: inline-flex; }
+        .icono-camara svg { width: 100%; height: 100%; fill: #fff; }
 
         /* ── LOADER ── */
-        #loader-modelo {
+        #loader {
             position: fixed; inset: 0;
             background: var(--oscuro);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 150;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.6s ease;
-            gap: 0;
+            transition: opacity .6s ease;
         }
-        #loader-modelo.visible {
-            opacity: 1;
-            pointer-events: all;
-        }
+        #loader.oculto { opacity: 0; pointer-events: none; }
 
-        /* Logo con efecto glow pulsante */
-        .loader-logo-wrap {
+        .logo-wrap {
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 48px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 44px;
         }
-
-        /* Halo exterior difuso */
-        .loader-logo-wrap::before {
-            content: '';
-            position: absolute;
-            width: 160%;
-            height: 160%;
-            border-radius: 50%;
-            background: radial-gradient(circle, var(--naranja-glow) 0%, transparent 70%);
-            animation: glow-halo 2.8s ease-in-out infinite;
+        .logo-wrap::before {
+            content: ''; position: absolute;
+            width: 170%; height: 170%; border-radius: 50%;
+            background: radial-gradient(circle, var(--acento-glow) 0%, transparent 68%);
+            animation: halo 2.6s ease-in-out infinite;
             pointer-events: none;
         }
-
-        /* Halo interior más concentrado */
-        .loader-logo-wrap::after {
-            content: '';
-            position: absolute;
-            width: 110%;
-            height: 110%;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(200, 151, 58, 0.25) 0%, transparent 65%);
-            animation: glow-halo 2.8s ease-in-out infinite reverse;
+        .logo-wrap::after {
+            content: ''; position: absolute;
+            width: 115%; height: 115%; border-radius: 50%;
+            background: radial-gradient(circle, rgba(64,211,183,.18) 0%, transparent 65%);
+            animation: halo 2.6s ease-in-out infinite reverse;
             pointer-events: none;
         }
-
-        @keyframes glow-halo {
-            0%, 100% { opacity: 0.3; transform: scale(0.92); }
-            50%       { opacity: 1;   transform: scale(1.08); }
+        @keyframes halo {
+            0%,100% { opacity: .28; transform: scale(.9); }
+            50%     { opacity: 1;   transform: scale(1.1); }
         }
-
-        .loader-logo {
-            width: clamp(140px, 42vw, 220px);
-            height: auto;
-            position: relative;
-            z-index: 1;
-            animation: logo-glow 2.8s ease-in-out infinite;
-            /* Fallback si no hay imagen */
-            min-height: 60px;
+        .logo-img {
+            width: clamp(130px, 40vw, 210px); height: auto;
+            position: relative; z-index: 1;
+            animation: logo-glow 2.6s ease-in-out infinite;
         }
-
         @keyframes logo-glow {
-            0%, 100% {
-                filter: drop-shadow(0 0 6px rgba(235, 98, 66, 0.3))
-                        drop-shadow(0 0 18px rgba(200, 151, 58, 0.2));
-                opacity: 0.85;
+            0%,100% {
+                filter: drop-shadow(0 0 6px rgba(64,211,183,.3)) drop-shadow(0 0 18px rgba(64,211,183,.15));
+                opacity: .82;
             }
             50% {
-                filter: drop-shadow(0 0 14px rgba(235, 98, 66, 0.75))
-                        drop-shadow(0 0 36px rgba(200, 151, 58, 0.45))
-                        drop-shadow(0 0 60px rgba(235, 98, 66, 0.2));
+                filter: drop-shadow(0 0 16px rgba(64,211,183,.8)) drop-shadow(0 0 40px rgba(64,211,183,.4)) drop-shadow(0 0 70px rgba(64,211,183,.18));
                 opacity: 1;
             }
         }
-
-        /* Barra de carga */
-        .loader-bar-wrap {
-            width: clamp(160px, 48vw, 240px);
-            height: 2px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 2px;
-            overflow: hidden;
+        .barra-wrap {
+            width: clamp(150px, 46vw, 230px); height: 2px;
+            background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden;
         }
-        .loader-bar-fill {
+        .barra-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--dorado), var(--naranja));
-            border-radius: 2px;
-            width: 0%;
-            transition: width 0.4s ease;
+            background: linear-gradient(90deg, var(--acento), #a8f0e8);
+            border-radius: 2px; width: 0%; transition: width .35s ease;
+        }
+        .barra-fill.indeterminado { width: 36% !important; animation: sweep 1.7s ease-in-out infinite; }
+        @keyframes sweep { 0% { transform: translateX(-200%); } 100% { transform: translateX(500%); } }
+
+        /* ── HUD AR ── */
+        #hud-ar {
+            position: fixed; inset: 0;
+            pointer-events: none; z-index: 50;
+            opacity: 0; transition: opacity .5s;
+        }
+        #hud-ar.visible { opacity: 1; }
+
+        .esquina { position: absolute; width: 30px; height: 30px; border-color: var(--naranja); border-style: solid; opacity: .8; }
+        .esquina.tl { top:22px; left:22px;   border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+        .esquina.tr { top:22px; right:22px;  border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+        .esquina.bl { bottom:22px; left:22px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+        .esquina.br { bottom:22px; right:22px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+        #etiqueta-sitio {
+            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+            font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px;
+            color: rgba(255,255,255,.55); text-transform: uppercase; white-space: nowrap;
         }
 
-        /* Barra animada cuando no hay progreso real */
-        .loader-bar-fill.indeterminado {
-            width: 38% !important;
-            animation: barra-indeterminada 1.7s ease-in-out infinite;
+        /* ── GUÍA ── */
+        #mensaje-guia {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            z-index: 60; text-align: center; pointer-events: none;
+            opacity: 0; transition: opacity .4s; padding: 0 32px;
         }
-        @keyframes barra-indeterminada {
-            0%   { transform: translateX(-200%); }
-            100% { transform: translateX(480%); }
+        #mensaje-guia.visible { opacity: 1; }
+        .guia-anillo {
+            width: 76px; height: 76px;
+            border: 2px solid var(--dorado); border-radius: 50%;
+            margin: 0 auto 18px; position: relative;
+            animation: girar 3s linear infinite;
         }
+        .guia-anillo::before {
+            content: ''; position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+            width: 8px; height: 8px; background: var(--dorado); border-radius: 50%;
+        }
+        @keyframes girar { to { transform: rotate(360deg); } }
+        .guia-texto { font-weight: 300; font-size: 14px; letter-spacing: 1.5px; line-height: 1.65; color: rgba(255,255,255,.85); }
+
+        /* ── BTN CERRAR ── */
+        #btn-cerrar {
+            position: fixed; top: 22px; left: 18px;
+            background: rgba(0,0,0,.55); color: rgba(255,255,255,.85);
+            border: 1px solid rgba(255,255,255,.15);
+            padding: 10px 18px; border-radius: 30px;
+            font-family: 'Lato', sans-serif; font-size: 13px; letter-spacing: 1px;
+            z-index: 200; cursor: pointer;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: background .2s;
+        }
+        #btn-cerrar:active { background: rgba(0,0,0,.8); }
+
+        /* ── CONTROLES AR ── */
+        #controles-ar {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 70;
+            display: none; flex-direction: column; align-items: center;
+            padding: 16px 20px max(env(safe-area-inset-bottom), 20px);
+            background: linear-gradient(to top, rgba(5,3,2,.95) 55%, transparent);
+            gap: 12px;
+        }
+        #controles-ar.visible { display: flex; }
+        .ctrl-fila { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 340px; }
+        .ctrl-label {
+            font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+            color: var(--dorado); text-transform: uppercase; width: 52px; text-align: right; flex-shrink: 0;
+        }
+        .ctrl-slider {
+            flex: 1; -webkit-appearance: none; appearance: none;
+            height: 3px; background: rgba(255,255,255,.12); border-radius: 2px; outline: none;
+        }
+        .ctrl-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+            background: var(--naranja); box-shadow: 0 0 8px var(--naranja-glow); cursor: pointer;
+        }
+        .ctrl-valor { font-size: 11px; color: rgba(255,255,255,.45); width: 36px; text-align: left; flex-shrink: 0; }
+        #btn-reset {
+            background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
+            color: rgba(255,255,255,.55); padding: 8px 20px; border-radius: 20px;
+            font-family: 'Lato', sans-serif; font-size: 12px; letter-spacing: 1px; cursor: pointer;
+        }
+
+        /* ── TOAST ── */
+        #toast {
+            position: fixed; bottom: 36px; left: 50%;
+            transform: translateX(-50%) translateY(16px);
+            background: rgba(10,8,6,.93); border: 1px solid var(--naranja);
+            color: var(--crema); padding: 15px 22px; border-radius: 14px;
+            font-size: 14px; text-align: center; line-height: 1.55;
+            z-index: 300; opacity: 0; max-width: 290px;
+            backdrop-filter: blur(10px); pointer-events: none;
+            transition: opacity .4s, transform .4s;
+        }
+        #toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: all; }
+
+        /* ── PANTALLA WEBVIEW ── */
+        #pantalla-webview {
+            display: none; position: fixed; inset: 0;
+            background: var(--oscuro);
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 500; padding: 40px 32px; text-align: center; gap: 22px;
+        }
+        #pantalla-webview.visible { display: flex; }
+        .wv-icono { font-size: 46px; }
+        .wv-titulo { font-family: 'Cinzel', serif; font-size: 18px; letter-spacing: 2px; color: var(--crema); line-height: 1.45; }
+        .wv-texto  { font-size: 14px; font-weight: 300; line-height: 1.7; color: rgba(255,255,255,.6); max-width: 290px; }
+        #btn-abrir-chrome {
+            background: var(--acento); color: #0A0806;
+            border: none; border-radius: 50px; padding: 16px 36px;
+            font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase; cursor: pointer; margin-top: 6px;
+        }
+        .wv-nota { font-size: 11px; color: rgba(255,255,255,.28); line-height: 1.6; max-width: 270px; }
     </style>
 </head>
 <body>
 
-    <!-- BOTÓN CERRAR -->
-    <button id="btn-cerrar" onclick="window.close(); history.back();">✕ Cerrar</button>
+    <!-- PANTALLA WEBVIEW -->
+    <div id="pantalla-webview">
+        <div class="wv-icono">📱</div>
+        <div class="wv-titulo">Abre en Chrome<br>para experiencia AR</div>
+        <div class="wv-texto">Esta experiencia de Realidad Aumentada requiere Chrome. Toca el botón para abrirla correctamente.</div>
+        <button id="btn-abrir-chrome">Abrir en Chrome</button>
+        <div class="wv-nota">Si el botón no funciona, copia la URL y pégala directamente en Chrome.</div>
+    </div>
 
-    <!-- LOADER DE MODELO -->
-    <div id="loader-modelo" class="visible">
-        <div class="loader-logo-wrap">
-            <img src="./assets/logo.png" alt="Logo" class="loader-logo"
+    <!-- BTN CERRAR -->
+    <button id="btn-cerrar" onclick="window.history.back()">✕ Cerrar</button>
+
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="logo-wrap">
+            <img src="./assets/logo.png" alt="Tambo de Camar" class="logo-img"
                  onerror="this.style.opacity='0'">
         </div>
-        <div class="loader-bar-wrap">
-            <div class="loader-bar-fill indeterminado" id="barra-progreso"></div>
+        <div class="barra-wrap">
+            <div class="barra-fill indeterminado" id="barra-progreso"></div>
         </div>
     </div>
 
-    <!-- MODEL VIEWER
-         CAMBIOS CLAVE:
-         · loading="eager"         → fuerza carga inmediata (sin esperar interacción)
-         · reveal="auto"           → muestra el modelo apenas termine de cargar
-         · poster omitido          → evita pantalla negra intermedia
-         · camera-controls         → permite rotar antes del AR
-    -->
+    <!-- MODEL VIEWER -->
     <model-viewer
         id="visor-ar"
         src="./assets/models/montado_general_optimizado_Optimizado.glb"
@@ -457,28 +300,13 @@
         shadow-softness="0.5"
         environment-image="neutral"
         exposure="1.1">
-
-        <!-- Botón AR nativo oculto (requerido por model-viewer) -->
-        <button slot="ar-button" id="ar-button-nativo" style="display:none;"></button>
-
+        <button slot="ar-button" id="ar-button-nativo" style="display:none"></button>
     </model-viewer>
 
-    <!-- PANTALLA DE INSTRUCCIONES -->
+    <!-- PANTALLA INICIO -->
     <div id="pantalla-inicio">
-        <!-- Fallback visual si no hay imagen -->
-        <div class="bg-fallback">
-            <svg width="120" height="120" viewBox="0 0 48 48" fill="none" style="opacity:0.12">
-                <rect x="4" y="20" width="40" height="3" rx="1.5" fill="#C8973A"/>
-                <rect x="16" y="8" width="16" height="3" rx="1.5" fill="#C8973A"/>
-                <rect x="16" y="37" width="16" height="3" rx="1.5" fill="#C8973A"/>
-                <rect x="4" y="8" width="8" height="8" rx="1" fill="#EB6242"/>
-                <rect x="36" y="8" width="8" height="8" rx="1" fill="#EB6242"/>
-                <rect x="4" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
-                <rect x="36" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
-            </svg>
-        </div>
-        <img src="./assets/instrucciones.png" alt="Instrucciones AR" class="bg-imagen"
-             onerror="this.style.display='none'">
+        <img src="./assets/instrucciones.png" alt="Instrucciones AR"
+             class="bg-imagen" onerror="this.style.display='none'">
         <button id="boton-activar-ar" class="cargando">
             <span class="icono-camara">
                 <svg viewBox="0 0 24 24"><path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zm7-12H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6.2A3 3 0 0 0 19 3.2zm-7 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
@@ -489,224 +317,233 @@
 
     <!-- HUD AR -->
     <div id="hud-ar">
-        <div class="esquina tl"></div>
-        <div class="esquina tr"></div>
-        <div class="esquina bl"></div>
-        <div class="esquina br"></div>
-        <div id="etiqueta-sitio">Tambo de Camar · Experiencia AR</div>
+        <div class="esquina tl"></div><div class="esquina tr"></div>
+        <div class="esquina bl"></div><div class="esquina br"></div>
+        <div id="etiqueta-sitio">Tambo de Camar · AR</div>
     </div>
 
     <!-- CONTROLES AR -->
     <div id="controles-ar">
         <div class="ctrl-fila">
             <span class="ctrl-label">Escala</span>
-            <input type="range" class="ctrl-slider" id="slider-escala"
-                min="0.005" max="0.12" step="0.001" value="0.034">
+            <input type="range" class="ctrl-slider" id="slider-escala" min="0.005" max="0.12" step="0.001" value="0.034">
             <span class="ctrl-valor" id="val-escala">3.4cm</span>
         </div>
         <div class="ctrl-fila">
             <span class="ctrl-label">Rotar</span>
-            <input type="range" class="ctrl-slider" id="slider-rotacion"
-                min="0" max="360" step="1" value="0">
+            <input type="range" class="ctrl-slider" id="slider-rotacion" min="0" max="360" step="1" value="0">
             <span class="ctrl-valor" id="val-rotacion">0°</span>
         </div>
         <button id="btn-reset">↺ Reset</button>
     </div>
 
-    <!-- Mensaje guía -->
+    <!-- GUÍA -->
     <div id="mensaje-guia">
         <div class="guia-anillo"></div>
         <p class="guia-texto" id="guia-texto">Mueve la cámara lentamente<br>sobre una superficie plana</p>
     </div>
 
-    <!-- Toast de error -->
-    <div id="toast-error">
-        <span id="toast-mensaje">⚠️ Tu dispositivo no soporta AR.<br>
-        <span style="font-size:12px;opacity:0.7">Prueba desde Safari en iOS o Chrome en Android.</span></span>
-    </div>
+    <!-- TOAST -->
+    <div id="toast"><span id="toast-msg"></span></div>
+
+    <!-- Model Viewer JS -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
     <script>
     (function () {
-        /* ── Referencias ── */
-        const viewer          = document.getElementById('visor-ar');
-        const pantallaInicio  = document.getElementById('pantalla-inicio');
-        const boton           = document.getElementById('boton-activar-ar');
-        const botonTexto      = document.getElementById('boton-texto');
-        const arButtonNativo  = document.getElementById('ar-button-nativo');
-        const hudAr           = document.getElementById('hud-ar');
-        const mensajeGuia     = document.getElementById('mensaje-guia');
-        const guiaTexto       = document.getElementById('guia-texto');
-        const toastError      = document.getElementById('toast-error');
-        const toastMensaje    = document.getElementById('toast-mensaje');
-        const loaderModelo    = document.getElementById('loader-modelo');
 
-        const barraProgreso   = document.getElementById('barra-progreso');
-        const controlesAr     = document.getElementById('controles-ar'); // ← declarado aquí, antes de usarlo
-        const sliderEscala    = document.getElementById('slider-escala');
-        const sliderRot       = document.getElementById('slider-rotacion');
-        const valEscala       = document.getElementById('val-escala');
-        const valRotacion     = document.getElementById('val-rotacion');
-        const btnReset        = document.getElementById('btn-reset');
+        /* ══════════════════════════════════════════
+           DETECCIÓN WEBVIEW
+           Apps de QR (WhatsApp, Instagram, FB, etc.)
+           usan WebView que NO soporta AR → redirigir
+        ══════════════════════════════════════════ */
+        const ua = navigator.userAgent || '';
+        const esWebView = (
+            /wv\b/.test(ua) ||
+            /FBAN|FBAV|Instagram|WhatsApp/.test(ua) ||
+            (/Android/.test(ua) && !/Chrome\/\d/.test(ua)) ||
+            (/iPhone|iPad/.test(ua) && /AppleWebKit/.test(ua) && !/Safari\//.test(ua))
+        );
 
-        /* ── Estado ── */
+        if (esWebView) {
+            document.getElementById('pantalla-webview').classList.add('visible');
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('btn-abrir-chrome').addEventListener('click', () => {
+                const url = window.location.href;
+                // intent:// abre Chrome directamente en Android
+                window.location.href = 'intent://' + url.replace(/^https?:\/\//, '') +
+                    '#Intent;scheme=https;package=com.android.chrome;end';
+                setTimeout(() => window.open(url, '_blank'), 1500);
+            });
+            return;
+        }
+
+        /* ══════════════════════════════════════════
+           REFERENCIAS DOM
+        ══════════════════════════════════════════ */
+        const viewer       = document.getElementById('visor-ar');
+        const pantalla     = document.getElementById('pantalla-inicio');
+        const boton        = document.getElementById('boton-activar-ar');
+        const botonTexto   = document.getElementById('boton-texto');
+        const arBtn        = document.getElementById('ar-button-nativo');
+        const hudAr        = document.getElementById('hud-ar');
+        const guia         = document.getElementById('mensaje-guia');
+        const guiaTexto    = document.getElementById('guia-texto');
+        const loader       = document.getElementById('loader');
+        const barra        = document.getElementById('barra-progreso');
+        const controlesAr  = document.getElementById('controles-ar');
+        const sliderEscala = document.getElementById('slider-escala');
+        const sliderRot    = document.getElementById('slider-rotacion');
+        const valEscala    = document.getElementById('val-escala');
+        const valRot       = document.getElementById('val-rotacion');
+        const toast        = document.getElementById('toast');
+        const toastMsg     = document.getElementById('toast-msg');
+
+        /* ══════════════════════════════════════════
+           ESTADO
+        ══════════════════════════════════════════ */
         const ESCALA_BASE = 0.034;
-        let escalaActual   = ESCALA_BASE;
-        let rotacionActual = 0;
-        let modeloCargado  = false;
-        let toastTimer     = null;
-        let ultimoPct      = 0;
+        let escala    = ESCALA_BASE;
+        let rotacion  = 0;
+        let ultimoPct = 0;
+        let toastTimer;
 
-        /* ── Timeout de seguridad (60s para modelos grandes) ── */
-        const TIMEOUT_MS = 60000;
-        const timeoutLoader = setTimeout(() => {
-            console.warn('[AR] Timeout: modelo tardó demasiado, continuando de todas formas.');
-            finalizarCarga(false);
-        }, TIMEOUT_MS);
+        /* ══════════════════════════════════════════
+           CARGA DEL MODELO
+        ══════════════════════════════════════════ */
+        const timeoutCarga = setTimeout(() => {
+            console.warn('[AR] Timeout — mostrando UI');
+            terminarLoader(false);
+        }, 90000);
 
-        viewer.addEventListener('progress', (e) => {
-            const pct = Math.round((e.detail.totalProgress || 0) * 100);
+        viewer.addEventListener('progress', ({ detail }) => {
+            const pct = Math.round((detail.totalProgress || 0) * 100);
             if (pct > ultimoPct) {
                 ultimoPct = pct;
-                if (barraProgreso.classList.contains('indeterminado')) {
-                    barraProgreso.classList.remove('indeterminado');
-                }
-                barraProgreso.style.width = pct + '%';
+                barra.classList.remove('indeterminado');
+                barra.style.width = pct + '%';
             }
         });
 
-        /* ── Modelo cargado con éxito ── */
         viewer.addEventListener('load', () => {
-            clearTimeout(timeoutLoader);
-            modeloCargado = true;
-            barraProgreso.classList.remove('indeterminado');
-            barraProgreso.style.width = '100%';
-            setTimeout(() => finalizarCarga(true), 300);
+            clearTimeout(timeoutCarga);
+            barra.classList.remove('indeterminado');
+            barra.style.width = '100%';
+            setTimeout(() => terminarLoader(true), 350);
         });
 
-        /* ── Error al cargar ── */
         viewer.addEventListener('error', (e) => {
-            clearTimeout(timeoutLoader);
-            console.error('[AR] Error cargando modelo:', e);
-            setTimeout(() => finalizarCarga(false), 1500);
+            clearTimeout(timeoutCarga);
+            console.error('[AR] Error:', e);
+            terminarLoader(false);
         });
 
-        function finalizarCarga(exito) {
-            loaderModelo.style.opacity = '0';
-            setTimeout(() => {
-                loaderModelo.classList.remove('visible');
-                loaderModelo.style.opacity = '';
-            }, 600);
+        function terminarLoader(exito) {
+            loader.classList.add('oculto');
+            setTimeout(() => loader.remove(), 700);
 
             if (exito) {
                 boton.classList.remove('cargando');
                 botonTexto.textContent = 'ACTIVAR CÁMARA AR';
                 if (!viewer.canActivateAR) {
                     boton.classList.add('sin-ar');
-                    botonTexto.textContent = '⚠️ AR no disponible en este dispositivo';
-                    mostrarToast('⚠️ Este dispositivo no soporta AR.<br><small>Prueba desde Safari en iOS o Chrome en Android.</small>');
+                    botonTexto.textContent = '⚠️ AR no disponible';
+                    mostrarToast('⚠️ AR no compatible.<br><small>Usa Chrome en Android o Safari en iOS.</small>');
                 }
             } else {
                 boton.classList.add('sin-ar');
-                botonTexto.textContent = '⚠️ Modelo no disponible';
+                botonTexto.textContent = '⚠️ Error al cargar modelo';
             }
         }
 
-        /* ── Click botón principal ── */
+        /* ══════════════════════════════════════════
+           ACTIVAR AR
+        ══════════════════════════════════════════ */
         boton.addEventListener('click', () => {
             if (boton.classList.contains('cargando') || boton.classList.contains('sin-ar')) return;
-
             if (!viewer.canActivateAR) {
-                mostrarToast('⚠️ AR no compatible.<br><small>Usa Safari en iOS o Chrome en Android.</small>');
+                mostrarToast('⚠️ AR no compatible.<br><small>Usa Chrome en Android o Safari en iOS.</small>');
                 return;
             }
-
-            pantallaInicio.classList.add('oculto');
-
+            pantalla.classList.add('oculto');
             setTimeout(() => {
-                mensajeGuia.classList.add('visible');
-                arButtonNativo.click();
-                setTimeout(() => mensajeGuia.classList.remove('visible'), 4500);
+                guia.classList.add('visible');
+                arBtn.click();
+                setTimeout(() => guia.classList.remove('visible'), 4500);
             }, 400);
         });
 
-        /* ── Ciclo de vida AR (un solo listener consolidado) ── */
-        viewer.addEventListener('ar-status', (e) => {
-            const estado = e.detail.status;
-            console.log('[AR] Estado:', estado);
-
-            switch (estado) {
+        /* ══════════════════════════════════════════
+           CICLO AR
+        ══════════════════════════════════════════ */
+        viewer.addEventListener('ar-status', ({ detail }) => {
+            switch (detail.status) {
                 case 'session-started':
                     hudAr.classList.add('visible');
-                    mensajeGuia.classList.add('visible');
-                    guiaTexto.innerHTML = 'Mueve la cámara lentamente<br>sobre una superficie plana';
+                    guia.classList.add('visible');
                     controlesAr.classList.add('visible');
+                    guiaTexto.innerHTML = 'Mueve la cámara lentamente<br>sobre una superficie plana';
                     break;
-
                 case 'object-placed':
-                    mensajeGuia.classList.remove('visible');
+                    guia.classList.remove('visible');
                     break;
-
                 case 'failed':
-                    hudAr.classList.remove('visible');
-                    mensajeGuia.classList.remove('visible');
-                    controlesAr.classList.remove('visible');
-                    pantallaInicio.classList.remove('oculto');
-                    mostrarToast('⚠️ No se pudo iniciar AR.<br><small>Verifica los permisos de cámara.</small>');
+                    ocultarHud(); pantalla.classList.remove('oculto');
+                    mostrarToast('⚠️ No se pudo iniciar AR.<br><small>Verifica permisos de cámara.</small>');
                     break;
-
                 case 'not-presenting':
-                    hudAr.classList.remove('visible');
-                    mensajeGuia.classList.remove('visible');
-                    controlesAr.classList.remove('visible');
-                    pantallaInicio.classList.remove('oculto');
+                    ocultarHud(); pantalla.classList.remove('oculto');
                     break;
             }
         });
 
-        /* ── Tracking AR ── */
-        viewer.addEventListener('ar-tracking', (e) => {
-            if (e.detail.status === 'not-tracking') {
-                mensajeGuia.classList.add('visible');
-                guiaTexto.innerHTML = 'Apunta la cámara<br>a una superficie plana de nuevo';
-            } else if (e.detail.status === 'tracking') {
-                mensajeGuia.classList.remove('visible');
+        viewer.addEventListener('ar-tracking', ({ detail }) => {
+            if (detail.status === 'not-tracking') {
+                guia.classList.add('visible');
+                guiaTexto.innerHTML = 'Apunta a una<br>superficie plana';
+            } else if (detail.status === 'tracking') {
+                guia.classList.remove('visible');
             }
         });
 
-        /* ── Controles de ajuste fino ── */
-        function aplicarTransformacion() {
-            viewer.setAttribute('scale', `${escalaActual} ${escalaActual} ${escalaActual}`);
-            viewer.setAttribute('orientation', `0deg ${rotacionActual}deg 0deg`);
+        function ocultarHud() {
+            hudAr.classList.remove('visible');
+            guia.classList.remove('visible');
+            controlesAr.classList.remove('visible');
         }
 
+        /* ══════════════════════════════════════════
+           CONTROLES
+        ══════════════════════════════════════════ */
+        function aplicar() {
+            viewer.setAttribute('scale', `${escala} ${escala} ${escala}`);
+            viewer.setAttribute('orientation', `0deg ${rotacion}deg 0deg`);
+        }
         sliderEscala.addEventListener('input', () => {
-            escalaActual = parseFloat(sliderEscala.value);
-            valEscala.textContent = (escalaActual * 100).toFixed(1) + 'cm';
-            aplicarTransformacion();
+            escala = parseFloat(sliderEscala.value);
+            valEscala.textContent = (escala * 100).toFixed(1) + 'cm';
+            aplicar();
         });
-
         sliderRot.addEventListener('input', () => {
-            rotacionActual = parseInt(sliderRot.value);
-            valRotacion.textContent = rotacionActual + '°';
-            aplicarTransformacion();
+            rotacion = parseInt(sliderRot.value);
+            valRot.textContent = rotacion + '°';
+            aplicar();
+        });
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            escala = ESCALA_BASE; rotacion = 0;
+            sliderEscala.value = ESCALA_BASE; sliderRot.value = 0;
+            valEscala.textContent = '3.4cm'; valRot.textContent = '0°';
+            aplicar();
         });
 
-        btnReset.addEventListener('click', () => {
-            escalaActual  = ESCALA_BASE;
-            rotacionActual = 0;
-            sliderEscala.value = ESCALA_BASE;
-            sliderRot.value = 0;
-            valEscala.textContent = '3.4cm';
-            valRotacion.textContent = '0°';
-            aplicarTransformacion();
-        });
-
-        /* ── Toast ── */
+        /* ══════════════════════════════════════════
+           TOAST
+        ══════════════════════════════════════════ */
         function mostrarToast(html) {
-            if (html) toastMensaje.innerHTML = html;
-            toastError.classList.add('visible');
+            toastMsg.innerHTML = html;
+            toast.classList.add('visible');
             clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toastError.classList.remove('visible'), 5000);
+            toastTimer = setTimeout(() => toast.classList.remove('visible'), 5000);
         }
 
     })();
