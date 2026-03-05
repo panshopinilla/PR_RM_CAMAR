@@ -4,9 +4,15 @@
     <meta charset="utf-8">
     <title>AR · Tambo de Camar</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+
+    <!-- Preconnect para reducir latencia -->
+    <link rel="preconnect" href="https://ajax.googleapis.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+
+    <!-- Model Viewer — cargado con defer para no bloquear render -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
     <style>
         :root {
@@ -51,7 +57,6 @@
             pointer-events: none;
         }
 
-        /* Imagen de instrucciones - ocupa todo el fondo */
         #pantalla-inicio .bg-imagen {
             position: absolute; inset: 0;
             width: 100%; height: 100%;
@@ -59,13 +64,19 @@
             opacity: 0.92;
         }
 
-        /* Gradiente para que el botón sea legible */
         #pantalla-inicio::after {
             content: '';
             position: absolute; bottom: 0; left: 0; right: 0;
             height: 35%;
             background: linear-gradient(to top, var(--oscuro) 30%, transparent);
             pointer-events: none;
+        }
+
+        /* Fallback si no hay imagen de fondo */
+        #pantalla-inicio .bg-fallback {
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 50% 30%, #1a1208 0%, var(--oscuro) 70%);
+            display: flex; align-items: center; justify-content: center;
         }
 
         /* ── BOTÓN PRINCIPAL ── */
@@ -85,14 +96,22 @@
             cursor: pointer;
             box-shadow: 0 0 0 0 var(--naranja-glow);
             animation: pulso 2.4s ease-in-out infinite;
-            transition: transform 0.15s, box-shadow 0.15s;
+            transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
             display: flex; align-items: center; gap: 12px;
             white-space: nowrap;
         }
 
-        #boton-activar-ar:active {
-            transform: scale(0.96);
-            box-shadow: 0 2px 8px var(--naranja-glow);
+        #boton-activar-ar:active { transform: scale(0.96); }
+        #boton-activar-ar.cargando {
+            opacity: 0.6;
+            pointer-events: none;
+            animation: none;
+        }
+        #boton-activar-ar.sin-ar {
+            opacity: 0.4;
+            pointer-events: none;
+            animation: none;
+            font-size: 13px;
         }
 
         @keyframes pulso {
@@ -100,14 +119,10 @@
             50%       { box-shadow: 0 0 0 14px transparent, 0 8px 30px var(--naranja-glow); }
         }
 
-        /* Ícono de cámara animado */
-        .icono-camara {
-            width: 22px; height: 22px;
-            position: relative; display: inline-block;
-        }
+        .icono-camara { width: 22px; height: 22px; display: inline-flex; align-items: center; }
         .icono-camara svg { width: 100%; height: 100%; fill: white; }
 
-        /* ── OVERLAY AR (visible mientras el AR está activo) ── */
+        /* ── HUD AR ── */
         #hud-ar {
             position: fixed; inset: 0;
             pointer-events: none;
@@ -115,10 +130,8 @@
             opacity: 0;
             transition: opacity 0.5s ease;
         }
-
         #hud-ar.visible { opacity: 1; }
 
-        /* Esquinas decorativas tipo visor */
         .esquina {
             position: absolute;
             width: 32px; height: 32px;
@@ -131,7 +144,6 @@
         .esquina.bl { bottom: 24px; left: 24px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
         .esquina.br { bottom: 24px; right: 24px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
 
-        /* Etiqueta nombre del sitio */
         #etiqueta-sitio {
             position: absolute; bottom: 36px; left: 50%;
             transform: translateX(-50%);
@@ -143,7 +155,7 @@
             white-space: nowrap;
         }
 
-        /* ── MENSAJE DE GUÍA (escaneo de superficie) ── */
+        /* ── MENSAJE GUÍA ── */
         #mensaje-guia {
             position: fixed;
             top: 50%; left: 50%;
@@ -155,7 +167,6 @@
             transition: opacity 0.4s ease;
             padding: 0 32px;
         }
-
         #mensaje-guia.visible { opacity: 1; }
 
         .guia-anillo {
@@ -166,7 +177,6 @@
             position: relative;
             animation: girar 3s linear infinite;
         }
-
         .guia-anillo::before {
             content: '';
             position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
@@ -174,7 +184,6 @@
             background: var(--dorado);
             border-radius: 50%;
         }
-
         @keyframes girar { to { transform: rotate(360deg); } }
 
         .guia-texto {
@@ -202,11 +211,12 @@
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             cursor: pointer;
+            border: none;
             transition: background 0.2s;
         }
         #btn-cerrar:active { background: rgba(0,0,0,0.8); }
 
-        /* ── TOAST DE ERROR ── */
+        /* ── TOAST ── */
         #toast-error {
             position: fixed; bottom: 40px; left: 50%;
             transform: translateX(-50%) translateY(20px);
@@ -224,13 +234,15 @@
             transition: opacity 0.4s, transform 0.4s;
             max-width: 300px;
             backdrop-filter: blur(10px);
+            pointer-events: none;
         }
         #toast-error.visible {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+            pointer-events: all;
         }
 
-        /* ── CONTROLES AR DE AJUSTE FINO ── */
+        /* ── CONTROLES AR ── */
         #controles-ar {
             position: fixed;
             bottom: 0; left: 0; right: 0;
@@ -242,7 +254,6 @@
             background: linear-gradient(to top, rgba(5,3,2,0.95) 60%, transparent);
             gap: 14px;
         }
-
         #controles-ar.visible { display: flex; }
 
         .ctrl-fila {
@@ -252,7 +263,6 @@
             width: 100%;
             max-width: 340px;
         }
-
         .ctrl-label {
             font-family: 'Cinzel', serif;
             font-size: 10px;
@@ -263,7 +273,6 @@
             text-align: right;
             flex-shrink: 0;
         }
-
         .ctrl-slider {
             flex: 1;
             -webkit-appearance: none;
@@ -273,7 +282,6 @@
             border-radius: 2px;
             outline: none;
         }
-
         .ctrl-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 22px; height: 22px;
@@ -282,7 +290,6 @@
             box-shadow: 0 0 8px var(--naranja-glow);
             cursor: pointer;
         }
-
         .ctrl-valor {
             font-family: 'Lato', sans-serif;
             font-size: 11px;
@@ -291,8 +298,6 @@
             text-align: left;
             flex-shrink: 0;
         }
-
-        /* Botón reset */
         #btn-reset {
             background: rgba(255,255,255,0.06);
             border: 1px solid rgba(255,255,255,0.15);
@@ -306,7 +311,7 @@
             backdrop-filter: blur(6px);
         }
 
-        /* ── LOADER DE MODELO ── */
+        /* ── LOADER MEJORADO ── */
         #loader-modelo {
             position: fixed; inset: 0;
             background: var(--oscuro);
@@ -317,14 +322,21 @@
             pointer-events: none;
             transition: opacity 0.5s;
         }
-
         #loader-modelo.visible {
             opacity: 1;
             pointer-events: all;
         }
 
+        .loader-icono {
+            animation: loader-pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes loader-pulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50%       { opacity: 0.9; transform: scale(1.08); }
+        }
+
         .loader-bar-wrap {
-            width: 180px; height: 2px;
+            width: 200px; height: 2px;
             background: rgba(255,255,255,0.1);
             border-radius: 2px;
             overflow: hidden;
@@ -335,7 +347,17 @@
             background: linear-gradient(90deg, var(--dorado), var(--naranja));
             border-radius: 2px;
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.4s ease;
+        }
+
+        /* Barra animada cuando no hay progreso real */
+        .loader-bar-fill.indeterminado {
+            width: 40% !important;
+            animation: barra-indeterminada 1.6s ease-in-out infinite;
+        }
+        @keyframes barra-indeterminada {
+            0%   { transform: translateX(-150%); }
+            100% { transform: translateX(350%); }
         }
 
         .loader-titulo {
@@ -346,17 +368,31 @@
             text-transform: uppercase;
             margin-top: 16px;
         }
+        .loader-subtitulo {
+            font-family: 'Lato', sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.35);
+            margin-top: 8px;
+        }
+        .loader-porcentaje {
+            font-family: 'Lato', sans-serif;
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 10px;
+            min-height: 16px;
+        }
     </style>
 </head>
 <body>
 
     <!-- BOTÓN CERRAR -->
-    <a id="btn-cerrar" onclick="window.close(); history.back();">✕ Cerrar</a>
+    <button id="btn-cerrar" onclick="window.close(); history.back();">✕ Cerrar</button>
 
     <!-- LOADER DE MODELO -->
-    <div id="loader-modelo">
-        <div style="text-align:center">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="opacity:0.6">
+    <div id="loader-modelo" class="visible">
+        <div class="loader-icono">
+            <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
                 <rect x="4" y="20" width="40" height="3" rx="1.5" fill="#C8973A"/>
                 <rect x="16" y="8" width="16" height="3" rx="1.5" fill="#C8973A"/>
                 <rect x="16" y="37" width="16" height="3" rx="1.5" fill="#C8973A"/>
@@ -366,13 +402,21 @@
                 <rect x="36" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
             </svg>
         </div>
-        <div class="loader-titulo">Cargando modelo</div>
+        <div class="loader-titulo" id="loader-titulo">Cargando modelo</div>
+        <div class="loader-subtitulo" id="loader-subtitulo">Preparando experiencia AR…</div>
         <div class="loader-bar-wrap">
-            <div class="loader-bar-fill" id="barra-progreso"></div>
+            <div class="loader-bar-fill indeterminado" id="barra-progreso"></div>
         </div>
+        <div class="loader-porcentaje" id="loader-pct"></div>
     </div>
 
-    <!-- MODEL VIEWER -->
+    <!-- MODEL VIEWER
+         CAMBIOS CLAVE:
+         · loading="eager"         → fuerza carga inmediata (sin esperar interacción)
+         · reveal="auto"           → muestra el modelo apenas termine de cargar
+         · poster omitido          → evita pantalla negra intermedia
+         · camera-controls         → permite rotar antes del AR
+    -->
     <model-viewer
         id="visor-ar"
         src="./assets/models/montado_general_optimizado_Optimizado.glb"
@@ -384,31 +428,43 @@
         ar-placement="floor"
         ar-scale="fixed"
         xr-environment
-        
+        loading="eager"
+        reveal="auto"
         shadow-intensity="1"
         shadow-softness="0.5"
         environment-image="neutral"
         exposure="1.1">
 
-        <!-- Botón AR nativo del sistema (requerido por model-viewer, oculto visualmente) -->
+        <!-- Botón AR nativo oculto (requerido por model-viewer) -->
         <button slot="ar-button" id="ar-button-nativo" style="display:none;"></button>
 
     </model-viewer>
 
     <!-- PANTALLA DE INSTRUCCIONES -->
     <div id="pantalla-inicio">
-        <img src="./assets/instrucciones.png" alt="Instrucciones AR" class="bg-imagen">
-        <button id="boton-activar-ar">
+        <!-- Fallback visual si no hay imagen -->
+        <div class="bg-fallback">
+            <svg width="120" height="120" viewBox="0 0 48 48" fill="none" style="opacity:0.12">
+                <rect x="4" y="20" width="40" height="3" rx="1.5" fill="#C8973A"/>
+                <rect x="16" y="8" width="16" height="3" rx="1.5" fill="#C8973A"/>
+                <rect x="16" y="37" width="16" height="3" rx="1.5" fill="#C8973A"/>
+                <rect x="4" y="8" width="8" height="8" rx="1" fill="#EB6242"/>
+                <rect x="36" y="8" width="8" height="8" rx="1" fill="#EB6242"/>
+                <rect x="4" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
+                <rect x="36" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
+            </svg>
+        </div>
+        <img src="./assets/instrucciones.png" alt="Instrucciones AR" class="bg-imagen"
+             onerror="this.style.display='none'">
+        <button id="boton-activar-ar" class="cargando">
             <span class="icono-camara">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zm7-12H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6.2A3 3 0 0 0 19 3.2zm-7 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
-                </svg>
+                <svg viewBox="0 0 24 24"><path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zm7-12H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6.2A3 3 0 0 0 19 3.2zm-7 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
             </span>
-            ACTIVAR CÁMARA AR
+            <span id="boton-texto">Cargando…</span>
         </button>
     </div>
 
-    <!-- HUD mientras AR activo -->
+    <!-- HUD AR -->
     <div id="hud-ar">
         <div class="esquina tl"></div>
         <div class="esquina tr"></div>
@@ -417,7 +473,7 @@
         <div id="etiqueta-sitio">Tambo de Camar · Experiencia AR</div>
     </div>
 
-    <!-- CONTROLES DE AJUSTE AR -->
+    <!-- CONTROLES AR -->
     <div id="controles-ar">
         <div class="ctrl-fila">
             <span class="ctrl-label">Escala</span>
@@ -434,164 +490,193 @@
         <button id="btn-reset">↺ Reset</button>
     </div>
 
-    <!-- Mensaje guía de escaneo -->
+    <!-- Mensaje guía -->
     <div id="mensaje-guia">
         <div class="guia-anillo"></div>
-        <p class="guia-texto">Mueve la cámara lentamente<br>sobre la maqueta</p>
+        <p class="guia-texto" id="guia-texto">Mueve la cámara lentamente<br>sobre una superficie plana</p>
     </div>
 
     <!-- Toast de error -->
-    <div id="toast-error" id="toast">
-        ⚠️ Tu dispositivo no soporta AR.<br>
-        <span style="font-size:12px; opacity:0.7;">Prueba desde Safari en iOS o Chrome en Android.</span>
+    <div id="toast-error">
+        <span id="toast-mensaje">⚠️ Tu dispositivo no soporta AR.<br>
+        <span style="font-size:12px;opacity:0.7">Prueba desde Safari en iOS o Chrome en Android.</span></span>
     </div>
 
     <script>
-        const viewer        = document.getElementById('visor-ar');
-        const pantallaInicio = document.getElementById('pantalla-inicio');
-        const boton         = document.getElementById('boton-activar-ar');
-        const arButtonNativo = document.getElementById('ar-button-nativo');
-        const hudAr         = document.getElementById('hud-ar');
-        const mensajeGuia   = document.getElementById('mensaje-guia');
-        const toastError    = document.getElementById('toast-error');
-        const loaderModelo  = document.getElementById('loader-modelo');
-        const barraProgreso = document.getElementById('barra-progreso');
+    (function () {
+        /* ── Referencias ── */
+        const viewer          = document.getElementById('visor-ar');
+        const pantallaInicio  = document.getElementById('pantalla-inicio');
+        const boton           = document.getElementById('boton-activar-ar');
+        const botonTexto      = document.getElementById('boton-texto');
+        const arButtonNativo  = document.getElementById('ar-button-nativo');
+        const hudAr           = document.getElementById('hud-ar');
+        const mensajeGuia     = document.getElementById('mensaje-guia');
+        const guiaTexto       = document.getElementById('guia-texto');
+        const toastError      = document.getElementById('toast-error');
+        const toastMensaje    = document.getElementById('toast-mensaje');
+        const loaderModelo    = document.getElementById('loader-modelo');
+        const loaderTitulo    = document.getElementById('loader-titulo');
+        const loaderSubtitulo = document.getElementById('loader-subtitulo');
+        const loaderPct       = document.getElementById('loader-pct');
+        const barraProgreso   = document.getElementById('barra-progreso');
+        const controlesAr     = document.getElementById('controles-ar'); // ← declarado aquí, antes de usarlo
+        const sliderEscala    = document.getElementById('slider-escala');
+        const sliderRot       = document.getElementById('slider-rotacion');
+        const valEscala       = document.getElementById('val-escala');
+        const valRotacion     = document.getElementById('val-rotacion');
+        const btnReset        = document.getElementById('btn-reset');
 
-        // ── Mostrar loader mientras carga el modelo ──
-        loaderModelo.classList.add('visible');
+        /* ── Estado ── */
+        const ESCALA_BASE = 0.034;
+        let escalaActual  = ESCALA_BASE;
+        let rotacionActual = 0;
+        let modeloCargado  = false;
+        let toastTimer     = null;
 
-        // Función central para ocultar el loader
-        function ocultarLoader() {
-            loaderModelo.style.transition = 'opacity 0.6s ease';
+        /* ── Timeout de seguridad (60s para modelos grandes) ── */
+        const TIMEOUT_MS = 60000;
+        const timeoutLoader = setTimeout(() => {
+            console.warn('[AR] Timeout: modelo tardó demasiado, continuando de todas formas.');
+            finalizarCarga(false);
+        }, TIMEOUT_MS);
+
+        /* ── Progreso de carga ── */
+        let ultimoPct = 0;
+        viewer.addEventListener('progress', (e) => {
+            const pct = Math.round((e.detail.totalProgress || 0) * 100);
+            if (pct > ultimoPct) {
+                ultimoPct = pct;
+                // Cuando hay progreso real, cambiar a barra determinada
+                if (barraProgreso.classList.contains('indeterminado')) {
+                    barraProgreso.classList.remove('indeterminado');
+                }
+                barraProgreso.style.width = pct + '%';
+                loaderPct.textContent = pct + '%';
+                if (pct > 10) loaderSubtitulo.textContent = 'Descargando geometría…';
+                if (pct > 60) loaderSubtitulo.textContent = 'Cargando texturas…';
+                if (pct > 90) loaderSubtitulo.textContent = 'Optimizando…';
+            }
+        });
+
+        /* ── Modelo cargado con éxito ── */
+        viewer.addEventListener('load', () => {
+            clearTimeout(timeoutLoader);
+            modeloCargado = true;
+            barraProgreso.classList.remove('indeterminado');
+            barraProgreso.style.width = '100%';
+            loaderPct.textContent = '100%';
+            loaderSubtitulo.textContent = '¡Listo!';
+            setTimeout(() => finalizarCarga(true), 400);
+        });
+
+        /* ── Error al cargar ── */
+        viewer.addEventListener('error', (e) => {
+            clearTimeout(timeoutLoader);
+            console.error('[AR] Error cargando modelo:', e);
+            loaderTitulo.textContent = '⚠️ Error al cargar';
+            loaderTitulo.style.color = '#EB6242';
+            loaderSubtitulo.textContent = 'Verifica la ruta del archivo .glb';
+            barraProgreso.classList.remove('indeterminado');
+            setTimeout(() => finalizarCarga(false), 2500);
+        });
+
+        function finalizarCarga(exito) {
+            // Ocultar loader
             loaderModelo.style.opacity = '0';
             setTimeout(() => {
                 loaderModelo.classList.remove('visible');
                 loaderModelo.style.opacity = '';
             }, 600);
+
+            if (exito) {
+                // Habilitar botón
+                boton.classList.remove('cargando');
+                botonTexto.textContent = 'ACTIVAR CÁMARA AR';
+
+                // Verificar soporte AR
+                if (!viewer.canActivateAR) {
+                    boton.classList.add('sin-ar');
+                    botonTexto.textContent = '⚠️ AR no disponible en este dispositivo';
+                    mostrarToast('⚠️ Este dispositivo no soporta AR.<br><small>Prueba desde Safari en iOS o Chrome en Android.</small>');
+                }
+            } else {
+                boton.classList.add('sin-ar');
+                botonTexto.textContent = '⚠️ Modelo no disponible';
+            }
         }
 
-        // TIMEOUT DE SEGURIDAD: si en 15s no cargó, ocultar igual
-        const timeoutLoader = setTimeout(() => {
-            console.warn('Timeout: ocultando loader por seguridad');
-            ocultarLoader();
-        }, 15000);
-
-        viewer.addEventListener('progress', (e) => {
-            const pct = Math.round(e.detail.totalProgress * 100);
-            barraProgreso.style.width = pct + '%';
-        });
-
-        viewer.addEventListener('load', () => {
-            clearTimeout(timeoutLoader);
-            setTimeout(ocultarLoader, 300);
-
-            if (!viewer.canActivateAR) {
-                mostrarToast();
-                boton.style.opacity = '0.4';
-                boton.style.pointerEvents = 'none';
-                boton.textContent = '⚠️ AR no disponible';
-            }
-        });
-
-        // ERROR al cargar modelo (ruta incorrecta, archivo muy grande, etc.)
-        viewer.addEventListener('error', (e) => {
-            clearTimeout(timeoutLoader);
-            console.error('Error cargando modelo:', e);
-            const titulo = document.querySelector('.loader-titulo');
-            if (titulo) { titulo.textContent = '⚠️ Error al cargar modelo'; titulo.style.color = '#EB6242'; }
-            setTimeout(ocultarLoader, 2000);
-        });
-
-        // ── Click en botón principal ──
+        /* ── Click botón principal ── */
         boton.addEventListener('click', () => {
+            if (boton.classList.contains('cargando') || boton.classList.contains('sin-ar')) return;
+
             if (!viewer.canActivateAR) {
-                mostrarToast();
+                mostrarToast('⚠️ AR no compatible.<br><small>Usa Safari en iOS o Chrome en Android.</small>');
                 return;
             }
 
-            // 1. Ocultar pantalla de instrucciones con animación
             pantallaInicio.classList.add('oculto');
 
-            // 2. Mostrar guía de escaneo
             setTimeout(() => {
                 mensajeGuia.classList.add('visible');
-
-                // 3. Disparar AR nativo del sistema
                 arButtonNativo.click();
-
-                // 4. Ocultar guía después de 4s
                 setTimeout(() => mensajeGuia.classList.remove('visible'), 4500);
-
             }, 400);
         });
 
-        // ── Eventos del ciclo AR ──
+        /* ── Ciclo de vida AR (un solo listener consolidado) ── */
         viewer.addEventListener('ar-status', (e) => {
             const estado = e.detail.status;
+            console.log('[AR] Estado:', estado);
 
-            if (estado === 'session-started') {
-                hudAr.classList.add('visible');
-                mensajeGuia.classList.add('visible');
-                controlesAr.classList.add('visible');  // mostrar controles
-            }
+            switch (estado) {
+                case 'session-started':
+                    hudAr.classList.add('visible');
+                    mensajeGuia.classList.add('visible');
+                    guiaTexto.innerHTML = 'Mueve la cámara lentamente<br>sobre una superficie plana';
+                    controlesAr.classList.add('visible');
+                    break;
 
-            if (estado === 'object-placed') {
-                mensajeGuia.classList.remove('visible');
-            }
+                case 'object-placed':
+                    mensajeGuia.classList.remove('visible');
+                    break;
 
-            if (estado === 'failed') {
-                mostrarToast();
-                hudAr.classList.remove('visible');
-                mensajeGuia.classList.remove('visible');
-                // Restaurar pantalla inicio si el AR falla
-                pantallaInicio.classList.remove('oculto');
+                case 'failed':
+                    hudAr.classList.remove('visible');
+                    mensajeGuia.classList.remove('visible');
+                    controlesAr.classList.remove('visible');
+                    pantallaInicio.classList.remove('oculto');
+                    mostrarToast('⚠️ No se pudo iniciar AR.<br><small>Verifica los permisos de cámara.</small>');
+                    break;
+
+                case 'not-presenting':
+                    hudAr.classList.remove('visible');
+                    mensajeGuia.classList.remove('visible');
+                    controlesAr.classList.remove('visible');
+                    pantallaInicio.classList.remove('oculto');
+                    break;
             }
         });
 
+        /* ── Tracking AR ── */
         viewer.addEventListener('ar-tracking', (e) => {
-            // Si el tracking se pierde, mostrar guía de re-escaneo
             if (e.detail.status === 'not-tracking') {
                 mensajeGuia.classList.add('visible');
-                mensajeGuia.querySelector('.guia-texto').textContent = 
-                    'Apunta la cámara\na la maqueta de nuevo';
+                guiaTexto.innerHTML = 'Apunta la cámara<br>a una superficie plana de nuevo';
             } else if (e.detail.status === 'tracking') {
                 mensajeGuia.classList.remove('visible');
             }
         });
 
-        viewer.addEventListener('ar-status', (e) => {
-            if (e.detail.status === 'not-presenting') {
-                hudAr.classList.remove('visible');
-                mensajeGuia.classList.remove('visible');
-                controlesAr.classList.remove('visible');  // ocultar controles
-                pantallaInicio.classList.remove('oculto');
-            }
-        });
-
-        // ── CONTROLES DE AJUSTE FINO ──
-        const controlesAr   = document.getElementById('controles-ar');
-        const sliderEscala  = document.getElementById('slider-escala');
-        const sliderRot     = document.getElementById('slider-rotacion');
-        const valEscala     = document.getElementById('val-escala');
-        const valRotacion   = document.getElementById('val-rotacion');
-        const btnReset      = document.getElementById('btn-reset');
-
-        // Escala inicial calculada para 34cm (modelo en metros reales)
-        const ESCALA_BASE = 0.034;
-        let escalaActual = ESCALA_BASE;
-        let rotacionActual = 0;
-
+        /* ── Controles de ajuste fino ── */
         function aplicarTransformacion() {
-            const s = escalaActual;
-            const r = rotacionActual;
-            viewer.setAttribute('scale', `${s} ${s} ${s}`);
-            viewer.setAttribute('orientation', `0deg ${r}deg 0deg`);
+            viewer.setAttribute('scale', `${escalaActual} ${escalaActual} ${escalaActual}`);
+            viewer.setAttribute('orientation', `0deg ${rotacionActual}deg 0deg`);
         }
 
         sliderEscala.addEventListener('input', () => {
             escalaActual = parseFloat(sliderEscala.value);
-            const cm = (escalaActual * 100).toFixed(1);
-            valEscala.textContent = cm + 'cm';
+            valEscala.textContent = (escalaActual * 100).toFixed(1) + 'cm';
             aplicarTransformacion();
         });
 
@@ -602,7 +687,7 @@
         });
 
         btnReset.addEventListener('click', () => {
-            escalaActual = ESCALA_BASE;
+            escalaActual  = ESCALA_BASE;
             rotacionActual = 0;
             sliderEscala.value = ESCALA_BASE;
             sliderRot.value = 0;
@@ -611,11 +696,15 @@
             aplicarTransformacion();
         });
 
-        // ── Toast de error ──
-        function mostrarToast() {
+        /* ── Toast ── */
+        function mostrarToast(html) {
+            if (html) toastMensaje.innerHTML = html;
             toastError.classList.add('visible');
-            setTimeout(() => toastError.classList.remove('visible'), 4000);
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastError.classList.remove('visible'), 5000);
         }
+
+    })();
     </script>
 </body>
 </html>
