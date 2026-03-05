@@ -311,7 +311,7 @@
             backdrop-filter: blur(6px);
         }
 
-        /* ── LOADER MEJORADO ── */
+        /* ── LOADER ── */
         #loader-modelo {
             position: fixed; inset: 0;
             background: var(--oscuro);
@@ -320,27 +320,83 @@
             z-index: 150;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.5s;
+            transition: opacity 0.6s ease;
+            gap: 0;
         }
         #loader-modelo.visible {
             opacity: 1;
             pointer-events: all;
         }
 
-        .loader-icono {
-            animation: loader-pulse 1.8s ease-in-out infinite;
-        }
-        @keyframes loader-pulse {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50%       { opacity: 0.9; transform: scale(1.08); }
+        /* Logo con efecto glow pulsante */
+        .loader-logo-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 48px;
         }
 
+        /* Halo exterior difuso */
+        .loader-logo-wrap::before {
+            content: '';
+            position: absolute;
+            width: 160%;
+            height: 160%;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--naranja-glow) 0%, transparent 70%);
+            animation: glow-halo 2.8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        /* Halo interior más concentrado */
+        .loader-logo-wrap::after {
+            content: '';
+            position: absolute;
+            width: 110%;
+            height: 110%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(200, 151, 58, 0.25) 0%, transparent 65%);
+            animation: glow-halo 2.8s ease-in-out infinite reverse;
+            pointer-events: none;
+        }
+
+        @keyframes glow-halo {
+            0%, 100% { opacity: 0.3; transform: scale(0.92); }
+            50%       { opacity: 1;   transform: scale(1.08); }
+        }
+
+        .loader-logo {
+            width: clamp(140px, 42vw, 220px);
+            height: auto;
+            position: relative;
+            z-index: 1;
+            animation: logo-glow 2.8s ease-in-out infinite;
+            /* Fallback si no hay imagen */
+            min-height: 60px;
+        }
+
+        @keyframes logo-glow {
+            0%, 100% {
+                filter: drop-shadow(0 0 6px rgba(235, 98, 66, 0.3))
+                        drop-shadow(0 0 18px rgba(200, 151, 58, 0.2));
+                opacity: 0.85;
+            }
+            50% {
+                filter: drop-shadow(0 0 14px rgba(235, 98, 66, 0.75))
+                        drop-shadow(0 0 36px rgba(200, 151, 58, 0.45))
+                        drop-shadow(0 0 60px rgba(235, 98, 66, 0.2));
+                opacity: 1;
+            }
+        }
+
+        /* Barra de carga */
         .loader-bar-wrap {
-            width: 200px; height: 2px;
-            background: rgba(255,255,255,0.1);
+            width: clamp(160px, 48vw, 240px);
+            height: 2px;
+            background: rgba(255,255,255,0.08);
             border-radius: 2px;
             overflow: hidden;
-            margin-top: 24px;
         }
         .loader-bar-fill {
             height: 100%;
@@ -352,35 +408,12 @@
 
         /* Barra animada cuando no hay progreso real */
         .loader-bar-fill.indeterminado {
-            width: 40% !important;
-            animation: barra-indeterminada 1.6s ease-in-out infinite;
+            width: 38% !important;
+            animation: barra-indeterminada 1.7s ease-in-out infinite;
         }
         @keyframes barra-indeterminada {
-            0%   { transform: translateX(-150%); }
-            100% { transform: translateX(350%); }
-        }
-
-        .loader-titulo {
-            font-family: 'Cinzel', serif;
-            font-size: 13px;
-            letter-spacing: 4px;
-            color: var(--dorado);
-            text-transform: uppercase;
-            margin-top: 16px;
-        }
-        .loader-subtitulo {
-            font-family: 'Lato', sans-serif;
-            font-size: 11px;
-            letter-spacing: 1px;
-            color: rgba(255,255,255,0.35);
-            margin-top: 8px;
-        }
-        .loader-porcentaje {
-            font-family: 'Lato', sans-serif;
-            font-size: 11px;
-            color: rgba(255,255,255,0.4);
-            margin-top: 10px;
-            min-height: 16px;
+            0%   { transform: translateX(-200%); }
+            100% { transform: translateX(480%); }
         }
     </style>
 </head>
@@ -391,23 +424,13 @@
 
     <!-- LOADER DE MODELO -->
     <div id="loader-modelo" class="visible">
-        <div class="loader-icono">
-            <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
-                <rect x="4" y="20" width="40" height="3" rx="1.5" fill="#C8973A"/>
-                <rect x="16" y="8" width="16" height="3" rx="1.5" fill="#C8973A"/>
-                <rect x="16" y="37" width="16" height="3" rx="1.5" fill="#C8973A"/>
-                <rect x="4" y="8" width="8" height="8" rx="1" fill="#EB6242"/>
-                <rect x="36" y="8" width="8" height="8" rx="1" fill="#EB6242"/>
-                <rect x="4" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
-                <rect x="36" y="32" width="8" height="8" rx="1" fill="#EB6242"/>
-            </svg>
+        <div class="loader-logo-wrap">
+            <img src="./assets/logo.png" alt="Logo" class="loader-logo"
+                 onerror="this.style.opacity='0'">
         </div>
-        <div class="loader-titulo" id="loader-titulo">Cargando modelo</div>
-        <div class="loader-subtitulo" id="loader-subtitulo">Preparando experiencia AR…</div>
         <div class="loader-bar-wrap">
             <div class="loader-bar-fill indeterminado" id="barra-progreso"></div>
         </div>
-        <div class="loader-porcentaje" id="loader-pct"></div>
     </div>
 
     <!-- MODEL VIEWER
@@ -516,9 +539,7 @@
         const toastError      = document.getElementById('toast-error');
         const toastMensaje    = document.getElementById('toast-mensaje');
         const loaderModelo    = document.getElementById('loader-modelo');
-        const loaderTitulo    = document.getElementById('loader-titulo');
-        const loaderSubtitulo = document.getElementById('loader-subtitulo');
-        const loaderPct       = document.getElementById('loader-pct');
+
         const barraProgreso   = document.getElementById('barra-progreso');
         const controlesAr     = document.getElementById('controles-ar'); // ← declarado aquí, antes de usarlo
         const sliderEscala    = document.getElementById('slider-escala');
@@ -529,10 +550,11 @@
 
         /* ── Estado ── */
         const ESCALA_BASE = 0.034;
-        let escalaActual  = ESCALA_BASE;
+        let escalaActual   = ESCALA_BASE;
         let rotacionActual = 0;
         let modeloCargado  = false;
         let toastTimer     = null;
+        let ultimoPct      = 0;
 
         /* ── Timeout de seguridad (60s para modelos grandes) ── */
         const TIMEOUT_MS = 60000;
@@ -541,21 +563,14 @@
             finalizarCarga(false);
         }, TIMEOUT_MS);
 
-        /* ── Progreso de carga ── */
-        let ultimoPct = 0;
         viewer.addEventListener('progress', (e) => {
             const pct = Math.round((e.detail.totalProgress || 0) * 100);
             if (pct > ultimoPct) {
                 ultimoPct = pct;
-                // Cuando hay progreso real, cambiar a barra determinada
                 if (barraProgreso.classList.contains('indeterminado')) {
                     barraProgreso.classList.remove('indeterminado');
                 }
                 barraProgreso.style.width = pct + '%';
-                loaderPct.textContent = pct + '%';
-                if (pct > 10) loaderSubtitulo.textContent = 'Descargando geometría…';
-                if (pct > 60) loaderSubtitulo.textContent = 'Cargando texturas…';
-                if (pct > 90) loaderSubtitulo.textContent = 'Optimizando…';
             }
         });
 
@@ -565,24 +580,17 @@
             modeloCargado = true;
             barraProgreso.classList.remove('indeterminado');
             barraProgreso.style.width = '100%';
-            loaderPct.textContent = '100%';
-            loaderSubtitulo.textContent = '¡Listo!';
-            setTimeout(() => finalizarCarga(true), 400);
+            setTimeout(() => finalizarCarga(true), 300);
         });
 
         /* ── Error al cargar ── */
         viewer.addEventListener('error', (e) => {
             clearTimeout(timeoutLoader);
             console.error('[AR] Error cargando modelo:', e);
-            loaderTitulo.textContent = '⚠️ Error al cargar';
-            loaderTitulo.style.color = '#EB6242';
-            loaderSubtitulo.textContent = 'Verifica la ruta del archivo .glb';
-            barraProgreso.classList.remove('indeterminado');
-            setTimeout(() => finalizarCarga(false), 2500);
+            setTimeout(() => finalizarCarga(false), 1500);
         });
 
         function finalizarCarga(exito) {
-            // Ocultar loader
             loaderModelo.style.opacity = '0';
             setTimeout(() => {
                 loaderModelo.classList.remove('visible');
@@ -590,11 +598,8 @@
             }, 600);
 
             if (exito) {
-                // Habilitar botón
                 boton.classList.remove('cargando');
                 botonTexto.textContent = 'ACTIVAR CÁMARA AR';
-
-                // Verificar soporte AR
                 if (!viewer.canActivateAR) {
                     boton.classList.add('sin-ar');
                     botonTexto.textContent = '⚠️ AR no disponible en este dispositivo';
