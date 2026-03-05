@@ -296,6 +296,8 @@
         xr-environment
         loading="eager"
         reveal="auto"
+        autoplay
+        animation-crossfade-duration="0"
         shadow-intensity="1"
         shadow-softness="0.5"
         environment-image="neutral"
@@ -445,6 +447,28 @@
             if (exito) {
                 boton.classList.remove('cargando');
                 botonTexto.textContent = 'ACTIVAR CÁMARA AR';
+
+                // ── Activar animaciones del GLB ──
+                const animaciones = viewer.availableAnimations;
+                console.log('[AR] Animaciones disponibles:', animaciones);
+
+                if (animaciones && animaciones.length > 0) {
+                    // Reproducir la primera animación (suele ser la principal)
+                    viewer.animationName = animaciones[0];
+                    viewer.play({ repetitions: Infinity });
+                    console.log('[AR] Reproduciendo:', animaciones[0]);
+
+                    // Si hay múltiples animaciones, encadenarlas en loop
+                    if (animaciones.length > 1) {
+                        let indiceActual = 0;
+                        viewer.addEventListener('finished', () => {
+                            indiceActual = (indiceActual + 1) % animaciones.length;
+                            viewer.animationName = animaciones[indiceActual];
+                            viewer.play({ repetitions: Infinity });
+                        });
+                    }
+                }
+
                 if (!viewer.canActivateAR) {
                     boton.classList.add('sin-ar');
                     botonTexto.textContent = '⚠️ AR no disponible';
