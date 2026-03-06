@@ -340,7 +340,7 @@
 
     <!-- CONTROLES (visor 3D normal, antes de entrar a AR) -->
     <div id="controles-ar">
-        <p class="ctrl-label-info">Ajusta antes de activar AR</p>
+        <p class="ctrl-label-info">Ajusta antes de activar AR · Maqueta 80×40 cm = 100%</p>
         <div class="ctrl-fila">
             <span class="ctrl-label">Escala</span>
             <input type="range" class="ctrl-slider" id="slider-escala"
@@ -423,7 +423,12 @@
         /* ══════════════════════════════════════════
            ESTADO
         ══════════════════════════════════════════ */
+        /* ── DIMENSIONES MAQUETA FÍSICA (cm) ── */
+        const MAQUETA_LARGO = 0.80;  // 80 cm → metros
+        const MAQUETA_ANCHO = 0.40;  // 40 cm → metros
+
         let escala   = 1.0;
+        let escalaBase = 1.0;  // factor calculado para calzar con maqueta
         let rotacion = 0;
         let toastTimer;
         let loaderEliminado = false;
@@ -475,6 +480,45 @@
             if (exito) {
                 boton.classList.remove('cargando');
                 botonTexto.textContent = 'ACTIVAR CÁMARA AR';
+
+                /* ── AUTO-ESCALA: ajustar modelo al tamaño de la maqueta ── */
+                try {
+                    const dim = viewer.getDimensions();  // {x, y, z} en metros
+                    console.log('[AR] Dimensiones modelo (m):', dim);
+
+                    if (dim && (dim.x > 0 || dim.z > 0)) {
+                        // El modelo tiene un largo (x o z) y un ancho
+                        // Calculamos qué factor necesitamos para que calce en 80x40cm
+                        const modelLargo = Math.max(dim.x, dim.z);
+                        const modelAncho = Math.min(dim.x, dim.z);
+
+                        // Escalar por el eje más largo para que no se salga de la maqueta
+                        const factorLargo = MAQUETA_LARGO / modelLargo;
+                        const factorAncho = MAQUETA_ANCHO / modelAncho;
+                        escalaBase = Math.min(factorLargo, factorAncho);
+
+                        console.log('[AR] Modelo:', modelLargo.toFixed(3) + 'm x ' + modelAncho.toFixed(3) + 'm x ' + dim.y.toFixed(3) + 'm (alto)');
+                        console.log('[AR] Factor escala calculado:', escalaBase.toFixed(4));
+
+                        escala = escalaBase;
+
+                        // Ajustar slider para girar alrededor del factor calculado
+                        const slMin = (escalaBase * 0.3).toFixed(3);
+                        const slMax = (escalaBase * 3.0).toFixed(3);
+                        sliderEscala.min = slMin;
+                        sliderEscala.max = slMax;
+                        sliderEscala.step = (escalaBase * 0.01).toFixed(4);
+                        sliderEscala.value = escalaBase;
+                        valEscala.textContent = '100%';  // 100% = tamaño maqueta
+
+                        mostrarToast(
+                            '📐 Modelo: ' + modelLargo.toFixed(2) + 'm × ' + modelAncho.toFixed(2) + 'm' +
+                            '<br><small>Escalado a maqueta 80×40 cm (×' + escalaBase.toFixed(3) + ')</small>'
+                        );
+                    }
+                } catch (e) {
+                    console.warn('[AR] No se pudo leer dimensiones:', e);
+                }
 
                 // Mostrar controles en el visor 3D (antes de entrar a AR)
                 controlesAr.classList.add('visible');
@@ -585,7 +629,9 @@
 
         sliderEscala.addEventListener('input', () => {
             escala = parseFloat(sliderEscala.value);
-            valEscala.textContent = Math.round(escala * 100) + '%';
+            // Mostrar porcentaje relativo al tamaño maqueta
+            const pct = Math.round((escala / escalaBase) * 100);
+            valEscala.textContent = pct + '%';
             aplicar();
         });
 
@@ -596,8 +642,9 @@
         });
 
         document.getElementById('btn-reset').addEventListener('click', () => {
-            escala = 1.0; rotacion = 0;
-            sliderEscala.value = 1.0;
+            escala = escalaBase;
+            rotacion = 0;
+            sliderEscala.value = escalaBase;
             sliderRot.value = 0;
             valEscala.textContent = '100%';
             valRot.textContent = '0°';
