@@ -1,0 +1,36 @@
+# ── Cloudflare Pages — Headers optimizados para AR/GLB ──
+
+# HTML — sin caché (siempre fresco)
+/*.html
+  Cache-Control: no-cache, must-revalidate
+  X-Content-Type-Options: nosniff
+
+# Modelos 3D GLB/GLTF — caché agresiva (no cambian seguido)
+/*.glb
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: model/gltf-binary
+  Access-Control-Allow-Origin: *
+
+/*.gltf
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: model/gltf+json
+  Access-Control-Allow-Origin: *
+
+# Imágenes
+/*.png
+  Cache-Control: public, max-age=2592000
+/*.jpg
+  Cache-Control: public, max-age=2592000
+/*.webp
+  Cache-Control: public, max-age=2592000
+
+# Assets generales
+/assets/*
+  Cache-Control: public, max-age=2592000
+  Access-Control-Allow-Origin: *
+
+# Seguridad general
+/*
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=*, xr-spatial-tracking=*
