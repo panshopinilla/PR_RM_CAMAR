@@ -274,7 +274,6 @@
 </head>
 <body>
 
-    <!-- PANTALLA WEBVIEW (solo si no es Chrome/Safari real) -->
     <div id="pantalla-webview">
         <div class="wv-icono">📱</div>
         <div class="wv-titulo">Abre en Chrome<br>para experiencia AR</div>
@@ -283,10 +282,8 @@
         <div class="wv-nota">Si el botón no funciona, copia la URL y pégala directamente en Chrome.</div>
     </div>
 
-    <!-- BTN CERRAR -->
     <button id="btn-cerrar" onclick="window.history.back()">✕ Cerrar</button>
 
-    <!-- LOADER -->
     <div id="loader">
         <div class="logo-wrap">
             <img src="./assets/logo.png" alt="Tambo de Camar" class="logo-img"
@@ -297,10 +294,9 @@
         </div>
     </div>
 
-    <!-- MODEL VIEWER -->
     <model-viewer
         id="visor-ar"
-        src="./assets/models/modelo_v3.glb"
+        src="https://pub-bc716f7cd22a44299b23bf184c837b0a.r2.dev/modelo_v3.glb"
         alt="Maqueta Tambo de Camar"
         ar
         ar-modes="webxr scene-viewer quick-look"
@@ -319,7 +315,6 @@
         <button slot="ar-button" id="ar-button-nativo" style="display:none"></button>
     </model-viewer>
 
-    <!-- PANTALLA INICIO -->
     <div id="pantalla-inicio">
         <img src="./assets/instrucciones.png" alt="Instrucciones AR"
              class="bg-imagen" onerror="this.style.display='none'">
@@ -331,14 +326,12 @@
         </button>
     </div>
 
-    <!-- HUD AR -->
     <div id="hud-ar">
         <div class="esquina tl"></div><div class="esquina tr"></div>
         <div class="esquina bl"></div><div class="esquina br"></div>
         <div id="etiqueta-sitio">Tambo de Camar · AR</div>
     </div>
 
-    <!-- CONTROLES (visor 3D normal, antes de entrar a AR) -->
     <div id="controles-ar">
         <p class="ctrl-label-info">Ajusta antes de activar AR · Maqueta 80×40 cm = 100%</p>
         <div class="ctrl-fila">
@@ -356,13 +349,11 @@
         <button id="btn-reset">↺ Reset</button>
     </div>
 
-    <!-- GUÍA -->
     <div id="mensaje-guia">
         <div class="guia-anillo"></div>
         <p class="guia-texto" id="guia-texto">Mueve la cámara lentamente<br>sobre una superficie plana</p>
     </div>
 
-    <!-- TOAST -->
     <div id="toast"><span id="toast-msg"></span></div>
 
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
