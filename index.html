@@ -299,19 +299,14 @@
         src="https://pub-bc716f7cd22a44299b23bf184c837b0a.r2.dev/modelo_v3.glb"
         alt="Maqueta Tambo de Camar"
         ar
-        ar-modes="webxr scene-viewer quick-look"
+        ar-modes="scene-viewer quick-look"
         camera-controls
         interaction-prompt="none"
-        ar-scale="fixed"
+        ar-scale="auto"
         ar-placement="floor"
-        xr-environment
         loading="eager"
         reveal="auto"
-        shadow-intensity="0.6"
-        shadow-softness="0.7"
-        environment-image="neutral"
-        exposure="1.0"
-        tone-mapping="neutral">
+        shadow-intensity="0.6">
         <button slot="ar-button" id="ar-button-nativo" style="display:none"></button>
     </model-viewer>
 
@@ -367,13 +362,9 @@
         ══════════════════════════════════════════ */
         const ua = navigator.userAgent || '';
 
-        // Chrome real en Android siempre contiene "Chrome/XX" en el UA
         const esChromeReal  = /Chrome\/\d/.test(ua) && !/Chromium/.test(ua);
-        // Safari real en iOS siempre contiene "Safari/" al final
         const esSafariReal  = /Safari\//.test(ua) && !/Chrome/.test(ua);
-        // WebViews de redes sociales (NO Chrome)
         const esWebViewSocial = /FBAN|FBAV|Instagram|WhatsApp|Line\/|TikTok/.test(ua);
-        // WebView Android puro sin Chrome (tiene "wv" pero no Chrome/)
         const esWebViewPuro = /wv\b/.test(ua) && !esChromeReal;
 
         const esWebView = (esWebViewSocial || esWebViewPuro) && !esChromeReal && !esSafariReal;
@@ -387,7 +378,7 @@
                     '#Intent;scheme=https;package=com.android.chrome;end';
                 setTimeout(() => window.open(url, '_blank'), 1500);
             });
-            return; // Detener todo lo demás
+            return; 
         }
 
         /* ══════════════════════════════════════════
@@ -414,12 +405,11 @@
         /* ══════════════════════════════════════════
            ESTADO
         ══════════════════════════════════════════ */
-        /* ── DIMENSIONES MAQUETA FÍSICA (cm) ── */
-        const MAQUETA_LARGO = 0.80;  // 80 cm → metros
-        const MAQUETA_ANCHO = 0.40;  // 40 cm → metros
+        const MAQUETA_LARGO = 0.80; 
+        const MAQUETA_ANCHO = 0.40;  
 
         let escala   = 1.0;
-        let escalaBase = 1.0;  // factor calculado para calzar con maqueta
+        let escalaBase = 1.0; 
         let rotacion = 0;
         let toastTimer;
         let loaderEliminado = false;
@@ -429,17 +419,16 @@
         ══════════════════════════════════════════ */
         let progresReal = false;
 
-        // Timeout de seguridad: 15s (antes eran 90s — demasiado)
         const timeoutCarga = setTimeout(() => {
             console.warn('[AR] Timeout 15s — mostrando UI de todos modos');
-            terminarLoader(true); // Mostramos igual, el modelo puede seguir cargando
+            terminarLoader(true); 
         }, 15000);
 
         viewer.addEventListener('progress', ({ detail }) => {
             const pct = Math.round((detail.totalProgress || 0) * 100);
             if (pct > 0 && !progresReal) {
                 progresReal = true;
-                barra.classList.remove('sweep'); // Cambiar a barra real
+                barra.classList.remove('sweep'); 
             }
             if (progresReal) barra.style.width = pct + '%';
         });
@@ -472,18 +461,14 @@
                 boton.classList.remove('cargando');
                 botonTexto.textContent = 'ACTIVAR CÁMARA AR';
 
-                /* ── AUTO-ESCALA: ajustar modelo al tamaño de la maqueta ── */
                 try {
-                    const dim = viewer.getDimensions();  // {x, y, z} en metros
+                    const dim = viewer.getDimensions();  
                     console.log('[AR] Dimensiones modelo (m):', dim);
 
                     if (dim && (dim.x > 0 || dim.z > 0)) {
-                        // El modelo tiene un largo (x o z) y un ancho
-                        // Calculamos qué factor necesitamos para que calce en 80x40cm
                         const modelLargo = Math.max(dim.x, dim.z);
                         const modelAncho = Math.min(dim.x, dim.z);
 
-                        // Escalar por el eje más largo para que no se salga de la maqueta
                         const factorLargo = MAQUETA_LARGO / modelLargo;
                         const factorAncho = MAQUETA_ANCHO / modelAncho;
                         escalaBase = Math.min(factorLargo, factorAncho);
@@ -493,14 +478,13 @@
 
                         escala = escalaBase;
 
-                        // Ajustar slider para girar alrededor del factor calculado
                         const slMin = (escalaBase * 0.3).toFixed(3);
                         const slMax = (escalaBase * 3.0).toFixed(3);
                         sliderEscala.min = slMin;
                         sliderEscala.max = slMax;
                         sliderEscala.step = (escalaBase * 0.01).toFixed(4);
                         sliderEscala.value = escalaBase;
-                        valEscala.textContent = '100%';  // 100% = tamaño maqueta
+                        valEscala.textContent = '100%';  
 
                         mostrarToast(
                             '📐 Modelo: ' + modelLargo.toFixed(2) + 'm × ' + modelAncho.toFixed(2) + 'm' +
@@ -511,11 +495,9 @@
                     console.warn('[AR] No se pudo leer dimensiones:', e);
                 }
 
-                // Mostrar controles en el visor 3D (antes de entrar a AR)
                 controlesAr.classList.add('visible');
                 aplicar();
 
-                // Animaciones si el modelo las tiene
                 const anims = viewer.availableAnimations || [];
                 if (anims.length > 0) {
                     let idx = 0;
@@ -552,7 +534,6 @@
                 mostrarToast('⚠️ AR no compatible.<br><small>Usa Chrome en Android o Safari en iOS.</small>');
                 return;
             }
-            // Ocultar controles del visor al entrar a AR
             controlesAr.classList.remove('visible');
             pantalla.classList.add('oculto');
 
@@ -586,7 +567,6 @@
                     break;
 
                 case 'not-presenting':
-                    // Usuario salió del AR → restaurar todo
                     ocultarHud();
                     pantalla.classList.remove('oculto');
                     controlesAr.classList.add('visible');
@@ -609,9 +589,7 @@
         }
 
         /* ══════════════════════════════════════════
-           CONTROLES (visor 3D — aplican ANTES de entrar a AR)
-           Nota: Scene Viewer ignora estos atributos en AR nativo.
-           El ajuste correcto es hacerlo en el visor 3D antes de activar.
+           CONTROLES
         ══════════════════════════════════════════ */
         function aplicar() {
             viewer.setAttribute('scale', `${escala} ${escala} ${escala}`);
@@ -620,7 +598,6 @@
 
         sliderEscala.addEventListener('input', () => {
             escala = parseFloat(sliderEscala.value);
-            // Mostrar porcentaje relativo al tamaño maqueta
             const pct = Math.round((escala / escalaBase) * 100);
             valEscala.textContent = pct + '%';
             aplicar();
