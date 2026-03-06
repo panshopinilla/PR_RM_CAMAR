@@ -293,15 +293,13 @@
         interaction-prompt="none"
         ar-placement="floor"
         ar-scale="fixed"
-        xr-environment
         loading="eager"
         reveal="auto"
-        autoplay
-        animation-crossfade-duration="0"
-        shadow-intensity="1"
-        shadow-softness="0.5"
+        shadow-intensity="0.6"
+        shadow-softness="1"
         environment-image="neutral"
-        exposure="1.1">
+        exposure="1.0"
+        tone-mapping="neutral">
         <button slot="ar-button" id="ar-button-nativo" style="display:none"></button>
     </model-viewer>
 
@@ -328,12 +326,14 @@
     <div id="controles-ar">
         <div class="ctrl-fila">
             <span class="ctrl-label">Escala</span>
-            <input type="range" class="ctrl-slider" id="slider-escala" min="0.005" max="0.12" step="0.001" value="0.034">
-            <span class="ctrl-valor" id="val-escala">3.4cm</span>
+            <input type="range" class="ctrl-slider" id="slider-escala"
+                   min="0.1" max="1.0" step="0.01" value="0.5">
+            <span class="ctrl-valor" id="val-escala">50%</span>
         </div>
         <div class="ctrl-fila">
             <span class="ctrl-label">Rotar</span>
-            <input type="range" class="ctrl-slider" id="slider-rotacion" min="0" max="360" step="1" value="0">
+            <input type="range" class="ctrl-slider" id="slider-rotacion"
+                   min="0" max="360" step="1" value="0">
             <span class="ctrl-valor" id="val-rotacion">0°</span>
         </div>
         <button id="btn-reset">↺ Reset</button>
@@ -403,12 +403,18 @@
 
         /* ══════════════════════════════════════════
            ESTADO
+           ESCALA_MAX = 1.0 → tamaño real del modelo (1:1)
+           Limita que la maqueta AR nunca supere el
+           tamaño físico real de la maqueta original.
         ══════════════════════════════════════════ */
-        const ESCALA_BASE = 0.034;
+        const ESCALA_MAX  = 1.0;   // 100% = tamaño real 1:1
+        const ESCALA_BASE = 0.5;   // 50% por defecto al iniciar
         let escala    = ESCALA_BASE;
         let rotacion  = 0;
         let ultimoPct = 0;
         let toastTimer;
+        let animaciones = [];
+        let indiceAnim  = 0;
 
         /* ══════════════════════════════════════════
            CARGA DEL MODELO
@@ -448,26 +454,33 @@
                 boton.classList.remove('cargando');
                 botonTexto.textContent = 'ACTIVAR CÁMARA AR';
 
-                // ── Activar animaciones del GLB ──
-                const animaciones = viewer.availableAnimations;
-                console.log('[AR] Animaciones disponibles:', animaciones);
+                /* ── ANIMACIONES ──
+                   Estrategia: reproducir cada animación UNA VEZ (repetitions:1)
+                   y al terminar pasar a la siguiente en ciclo infinito.
+                   Esto evita el conflicto con autoplay y funciona en AR también.
+                */
+                animaciones = viewer.availableAnimations || [];
+                console.log('[AR] Animaciones:', animaciones);
 
-                if (animaciones && animaciones.length > 0) {
-                    // Reproducir la primera animación (suele ser la principal)
-                    viewer.animationName = animaciones[0];
-                    viewer.play({ repetitions: Infinity });
-                    console.log('[AR] Reproduciendo:', animaciones[0]);
-
-                    // Si hay múltiples animaciones, encadenarlas en loop
-                    if (animaciones.length > 1) {
-                        let indiceActual = 0;
-                        viewer.addEventListener('finished', () => {
-                            indiceActual = (indiceActual + 1) % animaciones.length;
-                            viewer.animationName = animaciones[indiceActual];
-                            viewer.play({ repetitions: Infinity });
-                        });
+                if (animaciones.length > 0) {
+                    function reproducirSiguiente() {
+                        viewer.animationName = animaciones[indiceAnim];
+                        viewer.play({ repetitions: 1 });
                     }
+
+                    // Al terminar cada animación, avanzar a la siguiente
+                    viewer.addEventListener('finished', () => {
+                        indiceAnim = (indiceAnim + 1) % animaciones.length;
+                        // Pequeña pausa antes de la siguiente
+                        setTimeout(reproducirSiguiente, 200);
+                    });
+
+                    // Iniciar la primera
+                    reproducirSiguiente();
                 }
+
+                // Aplicar escala inicial
+                aplicar();
 
                 if (!viewer.canActivateAR) {
                     boton.classList.add('sin-ar');
@@ -540,12 +553,15 @@
            CONTROLES
         ══════════════════════════════════════════ */
         function aplicar() {
-            viewer.setAttribute('scale', `${escala} ${escala} ${escala}`);
+            // Limitar siempre al máximo definido (nunca supera 1:1)
+            const s = Math.min(escala, ESCALA_MAX);
+            viewer.setAttribute('scale', `${s} ${s} ${s}`);
             viewer.setAttribute('orientation', `0deg ${rotacion}deg 0deg`);
         }
         sliderEscala.addEventListener('input', () => {
             escala = parseFloat(sliderEscala.value);
-            valEscala.textContent = (escala * 100).toFixed(1) + 'cm';
+            const pct = Math.round(escala * 100);
+            valEscala.textContent = pct + '%';
             aplicar();
         });
         sliderRot.addEventListener('input', () => {
@@ -555,8 +571,10 @@
         });
         document.getElementById('btn-reset').addEventListener('click', () => {
             escala = ESCALA_BASE; rotacion = 0;
-            sliderEscala.value = ESCALA_BASE; sliderRot.value = 0;
-            valEscala.textContent = '3.4cm'; valRot.textContent = '0°';
+            sliderEscala.value = ESCALA_BASE;
+            sliderRot.value = 0;
+            valEscala.textContent = Math.round(ESCALA_BASE * 100) + '%';
+            valRot.textContent = '0°';
             aplicar();
         });
 
