@@ -28,40 +28,50 @@
             overflow: hidden;
         }
 
+        /* ── VISOR 3D ── */
         model-viewer {
             width: 100%; height: 100%;
             --poster-color: transparent;
-            background: transparent;
+            background: radial-gradient(circle at center, #1a1612 0%, var(--oscuro) 100%);
         }
 
-        /* ── PANTALLA INICIO ── */
-        #pantalla-inicio {
+        /* ── INTERFAZ DE PREVISUALIZACIÓN (NUEVA) ── */
+        #pantalla-previa {
             position: fixed; inset: 0;
-            background: var(--oscuro);
-            display: flex; flex-direction: column;
-            justify-content: flex-end; align-items: center;
+            display: flex; flex-direction: column; justify-content: space-between;
             z-index: 100;
-            padding-bottom: max(env(safe-area-inset-bottom), 32px);
-            transition: opacity .6s ease, transform .6s ease;
+            pointer-events: none; /* Permite tocar el modelo 3D a través de esta capa */
+            transition: opacity 0.6s ease;
         }
-        #pantalla-inicio.oculto {
-            opacity: 0; transform: scale(1.04); pointer-events: none;
+        #pantalla-previa.oculto { opacity: 0; pointer-events: none; }
+        
+        /* Cabecera */
+        .header-previa {
+            background: linear-gradient(to bottom, rgba(10,8,6,0.9) 0%, transparent 100%);
+            padding: 30px 20px 50px; text-align: center;
         }
-        #pantalla-inicio .bg-imagen {
-            position: absolute; inset: 0;
-            width: 100%; height: 100%;
-            object-fit: cover; opacity: .92;
+        .header-previa h1 { font-family: 'Cinzel', serif; font-size: 22px; color: var(--crema); letter-spacing: 3px; margin-bottom: 8px; }
+        .header-previa p { font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 300; letter-spacing: 1px; }
+
+        /* Contenedor inferior (Instrucciones + Botón) */
+        .footer-previa {
+            background: linear-gradient(to top, rgba(10,8,6,0.95) 20%, transparent 100%);
+            padding: 50px 20px max(env(safe-area-inset-bottom), 30px);
+            display: flex; flex-direction: column; align-items: center;
+            pointer-events: auto; /* Permite hacer clic en los controles */
         }
-        #pantalla-inicio::after {
-            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 38%;
-            background: linear-gradient(to top, var(--oscuro) 35%, transparent);
-            pointer-events: none;
+        
+        .tarjeta-instrucciones {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 15px 20px; margin-bottom: 25px;
+            backdrop-filter: blur(10px); max-width: 320px; text-align: center;
         }
+        .tarjeta-instrucciones p { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.5; margin-bottom: 8px;}
+        .tarjeta-instrucciones p:last-child { margin-bottom: 0; color: var(--acento); font-weight: 400;}
 
         /* ── BOTÓN AR ── */
         #boton-activar-ar {
-            position: relative; z-index: 10;
-            margin-bottom: 40px;
+            position: relative;
             background: var(--acento); color: #0A0806;
             border: none; border-radius: 50px;
             padding: 18px 44px;
@@ -86,209 +96,43 @@
         #loader {
             position: fixed; inset: 0;
             background: var(--oscuro);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 150;
-            transition: opacity .6s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 150; transition: opacity .6s ease;
         }
         #loader.oculto { opacity: 0; pointer-events: none; }
-
-        .logo-wrap {
-            position: relative;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 44px;
-        }
-        .logo-wrap::before {
-            content: ''; position: absolute;
-            width: 170%; height: 170%; border-radius: 50%;
-            background: radial-gradient(circle, var(--acento-glow) 0%, transparent 68%);
-            animation: halo 2.6s ease-in-out infinite;
-        }
-        .logo-wrap::after {
-            content: ''; position: absolute;
-            width: 115%; height: 115%; border-radius: 50%;
-            background: radial-gradient(circle, rgba(64,211,183,.18) 0%, transparent 65%);
-            animation: halo 2.6s ease-in-out infinite reverse;
-        }
-        @keyframes halo {
-            0%,100% { opacity: .28; transform: scale(.9); }
-            50%     { opacity: 1;   transform: scale(1.1); }
-        }
-        .logo-img {
-            width: clamp(130px, 40vw, 210px); height: auto;
-            position: relative; z-index: 1;
-            animation: logo-glow 2.6s ease-in-out infinite;
-        }
+        .logo-img { width: clamp(130px, 40vw, 210px); height: auto; margin-bottom: 44px; animation: logo-glow 2.6s infinite; }
         @keyframes logo-glow {
-            0%,100% {
-                filter: drop-shadow(0 0 6px rgba(64,211,183,.3)) drop-shadow(0 0 18px rgba(64,211,183,.15));
-                opacity: .82;
-            }
-            50% {
-                filter: drop-shadow(0 0 16px rgba(64,211,183,.8)) drop-shadow(0 0 40px rgba(64,211,183,.4));
-                opacity: 1;
-            }
+            0%,100% { filter: drop-shadow(0 0 6px rgba(64,211,183,.3)); opacity: .82; }
+            50% { filter: drop-shadow(0 0 16px rgba(64,211,183,.8)); opacity: 1; }
         }
-        .barra-wrap {
-            width: clamp(150px, 46vw, 230px); height: 2px;
-            background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden;
-        }
-        .barra-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--acento), #a8f0e8);
-            border-radius: 2px; width: 0%; transition: width .35s ease;
-        }
-        /* Animación indeterminada mientras no hay progreso real */
-        .barra-fill.sweep {
-            width: 36% !important;
-            animation: sweep 1.7s ease-in-out infinite;
-        }
-        @keyframes sweep {
-            0%   { transform: translateX(-200%); }
-            100% { transform: translateX(500%); }
-        }
+        .barra-wrap { width: clamp(150px, 46vw, 230px); height: 2px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; }
+        .barra-fill { height: 100%; background: linear-gradient(90deg, var(--acento), #a8f0e8); width: 0%; transition: width .35s ease; }
+        .barra-fill.sweep { width: 36% !important; animation: sweep 1.7s ease-in-out infinite; }
+        @keyframes sweep { 0% { transform: translateX(-200%); } 100% { transform: translateX(500%); } }
 
         /* ── HUD AR ── */
-        #hud-ar {
-            position: fixed; inset: 0;
-            pointer-events: none; z-index: 50;
-            opacity: 0; transition: opacity .5s;
-        }
+        #hud-ar { position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0; transition: opacity .5s; }
         #hud-ar.visible { opacity: 1; }
-
         .esquina { position: absolute; width: 30px; height: 30px; border-color: var(--naranja); border-style: solid; opacity: .8; }
-        .esquina.tl { top:22px; left:22px;    border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
-        .esquina.tr { top:22px; right:22px;   border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
-        .esquina.bl { bottom:22px; left:22px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+        .esquina.tl { top:22px; left:22px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+        .esquina.tr { top:22px; right:22px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+        .esquina.bl { bottom:22px; left:22px; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
         .esquina.br { bottom:22px; right:22px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
-
-        #etiqueta-sitio {
-            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-            font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px;
-            color: rgba(255,255,255,.55); text-transform: uppercase; white-space: nowrap;
-        }
-
-        /* ── GUÍA ── */
-        #mensaje-guia {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-            z-index: 60; text-align: center; pointer-events: none;
-            opacity: 0; transition: opacity .4s; padding: 0 32px;
-        }
-        #mensaje-guia.visible { opacity: 1; }
-        .guia-anillo {
-            width: 76px; height: 76px;
-            border: 2px solid var(--dorado); border-radius: 50%;
-            margin: 0 auto 18px; position: relative;
-            animation: girar 3s linear infinite;
-        }
-        .guia-anillo::before {
-            content: ''; position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
-            width: 8px; height: 8px; background: var(--dorado); border-radius: 50%;
-        }
-        @keyframes girar { to { transform: rotate(360deg); } }
-        .guia-texto {
-            font-weight: 300; font-size: 14px; letter-spacing: 1.5px;
-            line-height: 1.65; color: rgba(255,255,255,.85);
-        }
-
-        /* ── BTN CERRAR ── */
-        #btn-cerrar {
-            position: fixed; top: 22px; left: 18px;
-            background: rgba(0,0,0,.55); color: rgba(255,255,255,.85);
-            border: 1px solid rgba(255,255,255,.15);
-            padding: 10px 18px; border-radius: 30px;
-            font-family: 'Lato', sans-serif; font-size: 13px; letter-spacing: 1px;
-            z-index: 200; cursor: pointer;
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-            transition: background .2s;
-        }
-        #btn-cerrar:active { background: rgba(0,0,0,.8); }
-
-        /* ── CONTROLES AR (solo visibles en visor 3D, no en AR nativo) ── */
-        #controles-ar {
-            position: fixed; bottom: 0; left: 0; right: 0; z-index: 70;
-            display: none; flex-direction: column; align-items: center;
-            padding: 16px 20px max(env(safe-area-inset-bottom), 20px);
-            background: linear-gradient(to top, rgba(5,3,2,.95) 55%, transparent);
-            gap: 12px;
-        }
-        #controles-ar.visible { display: flex; }
-
-        .ctrl-label-info {
-            font-size: 11px; color: rgba(255,255,255,.35);
-            letter-spacing: 1px; text-align: center;
-            font-family: 'Lato', sans-serif;
-        }
-        .ctrl-fila { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 340px; }
-        .ctrl-label {
-            font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
-            color: var(--dorado); text-transform: uppercase; width: 52px; text-align: right; flex-shrink: 0;
-        }
-        .ctrl-slider {
-            flex: 1; -webkit-appearance: none; appearance: none;
-            height: 3px; background: rgba(255,255,255,.12); border-radius: 2px; outline: none;
-        }
-        .ctrl-slider::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
-            background: var(--naranja); box-shadow: 0 0 8px var(--naranja-glow); cursor: pointer;
-        }
-        .ctrl-valor { font-size: 11px; color: rgba(255,255,255,.45); width: 36px; text-align: left; flex-shrink: 0; }
-        #btn-reset {
-            background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
-            color: rgba(255,255,255,.55); padding: 8px 20px; border-radius: 20px;
-            font-family: 'Lato', sans-serif; font-size: 12px; letter-spacing: 1px; cursor: pointer;
-        }
 
         /* ── TOAST ── */
         #toast {
-            position: fixed; bottom: 36px; left: 50%;
-            transform: translateX(-50%) translateY(16px);
-            background: rgba(10,8,6,.93); border: 1px solid var(--naranja);
-            color: var(--crema); padding: 15px 22px; border-radius: 14px;
-            font-size: 14px; text-align: center; line-height: 1.55;
-            z-index: 300; opacity: 0; max-width: 300px;
-            backdrop-filter: blur(10px); pointer-events: none;
-            transition: opacity .4s, transform .4s;
+            position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%) translateY(16px);
+            background: rgba(10,8,6,.93); border: 1px solid var(--naranja); color: var(--crema);
+            padding: 15px 22px; border-radius: 14px; font-size: 14px; text-align: center;
+            z-index: 300; opacity: 0; pointer-events: none; transition: opacity .4s, transform .4s;
         }
         #toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-        /* ── PANTALLA WEBVIEW ── */
-        #pantalla-webview {
-            display: none; position: fixed; inset: 0;
-            background: var(--oscuro);
-            flex-direction: column; align-items: center; justify-content: center;
-            z-index: 500; padding: 40px 32px; text-align: center; gap: 22px;
-        }
-        #pantalla-webview.visible { display: flex; }
-        .wv-icono  { font-size: 46px; }
-        .wv-titulo { font-family: 'Cinzel', serif; font-size: 18px; letter-spacing: 2px; color: var(--crema); line-height: 1.45; }
-        .wv-texto  { font-size: 14px; font-weight: 300; line-height: 1.7; color: rgba(255,255,255,.6); max-width: 290px; }
-        #btn-abrir-chrome {
-            background: var(--acento); color: #0A0806;
-            border: none; border-radius: 50px; padding: 16px 36px;
-            font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
-            letter-spacing: 2px; text-transform: uppercase; cursor: pointer; margin-top: 6px;
-        }
-        .wv-nota { font-size: 11px; color: rgba(255,255,255,.28); line-height: 1.6; max-width: 270px; }
     </style>
 </head>
 <body>
 
-    <div id="pantalla-webview">
-        <div class="wv-icono">📱</div>
-        <div class="wv-titulo">Abre en Chrome<br>para experiencia AR</div>
-        <div class="wv-texto">Esta experiencia de Realidad Aumentada requiere Chrome. Toca el botón para abrirla correctamente.</div>
-        <button id="btn-abrir-chrome">Abrir en Chrome</button>
-        <div class="wv-nota">Si el botón no funciona, copia la URL y pégala directamente en Chrome.</div>
-    </div>
-
-    <button id="btn-cerrar" onclick="window.history.back()">✕ Cerrar</button>
-
     <div id="loader">
-        <div class="logo-wrap">
-            <img src="./assets/logo.png" alt="Tambo de Camar" class="logo-img"
-                 onerror="this.style.opacity='0'">
-        </div>
+        <img src="./assets/logo.png" alt="Tambo de Camar" class="logo-img" onerror="this.style.opacity='0'">
         <div class="barra-wrap">
             <div class="barra-fill sweep" id="barra-progreso"></div>
         </div>
@@ -301,6 +145,8 @@
         ar
         ar-modes="scene-viewer quick-look"
         camera-controls
+        auto-rotate
+        rotation-per-second="15deg"
         interaction-prompt="none"
         ar-scale="auto"
         ar-placement="floor"
@@ -310,43 +156,30 @@
         <button slot="ar-button" id="ar-button-nativo" style="display:none"></button>
     </model-viewer>
 
-    <div id="pantalla-inicio">
-        <img src="./assets/instrucciones.png" alt="Instrucciones AR"
-             class="bg-imagen" onerror="this.style.display='none'">
-        <button id="boton-activar-ar" class="cargando">
-            <span class="icono-camara">
-                <svg viewBox="0 0 24 24"><path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zm7-12H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6.2A3 3 0 0 0 19 3.2zm-7 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
-            </span>
-            <span id="boton-texto">Cargando…</span>
-        </button>
+    <div id="pantalla-previa">
+        <div class="header-previa">
+            <h1>Tambo de Camar</h1>
+            <p>Reconstrucción Virtual 3D</p>
+        </div>
+        
+        <div class="footer-previa">
+            <div class="tarjeta-instrucciones">
+                <p>Explora el modelo arrastrando con un dedo. Usa dos dedos para acercarlo.</p>
+                <p>Presiona el botón cuando estés frente a la maqueta real para iniciar la Realidad Aumentada.</p>
+            </div>
+            
+            <button id="boton-activar-ar" class="cargando">
+                <span class="icono-camara">
+                    <svg viewBox="0 0 24 24"><path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zm7-12H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6.2A3 3 0 0 0 19 3.2zm-7 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+                </span>
+                <span id="boton-texto">Cargando…</span>
+            </button>
+        </div>
     </div>
 
     <div id="hud-ar">
         <div class="esquina tl"></div><div class="esquina tr"></div>
         <div class="esquina bl"></div><div class="esquina br"></div>
-        <div id="etiqueta-sitio">Tambo de Camar · AR</div>
-    </div>
-
-    <div id="controles-ar">
-        <p class="ctrl-label-info">Ajusta antes de activar AR · Maqueta 80×40 cm = 100%</p>
-        <div class="ctrl-fila">
-            <span class="ctrl-label">Escala</span>
-            <input type="range" class="ctrl-slider" id="slider-escala"
-                   min="0.1" max="2.0" step="0.01" value="1.0">
-            <span class="ctrl-valor" id="val-escala">100%</span>
-        </div>
-        <div class="ctrl-fila">
-            <span class="ctrl-label">Rotar</span>
-            <input type="range" class="ctrl-slider" id="slider-rotacion"
-                   min="0" max="360" step="1" value="0">
-            <span class="ctrl-valor" id="val-rotacion">0°</span>
-        </div>
-        <button id="btn-reset">↺ Reset</button>
-    </div>
-
-    <div id="mensaje-guia">
-        <div class="guia-anillo"></div>
-        <p class="guia-texto" id="guia-texto">Mueve la cámara lentamente<br>sobre una superficie plana</p>
     </div>
 
     <div id="toast"><span id="toast-msg"></span></div>
@@ -355,69 +188,19 @@
 
     <script>
     (function () {
-
-        /* ══════════════════════════════════════════
-           DETECCIÓN WEBVIEW — versión corregida
-           Solo bloquea WebViews reales, NO Chrome legítimo
-        ══════════════════════════════════════════ */
-        const ua = navigator.userAgent || '';
-
-        const esChromeReal  = /Chrome\/\d/.test(ua) && !/Chromium/.test(ua);
-        const esSafariReal  = /Safari\//.test(ua) && !/Chrome/.test(ua);
-        const esWebViewSocial = /FBAN|FBAV|Instagram|WhatsApp|Line\/|TikTok/.test(ua);
-        const esWebViewPuro = /wv\b/.test(ua) && !esChromeReal;
-
-        const esWebView = (esWebViewSocial || esWebViewPuro) && !esChromeReal && !esSafariReal;
-
-        if (esWebView) {
-            document.getElementById('pantalla-webview').classList.add('visible');
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('btn-abrir-chrome').addEventListener('click', () => {
-                const url = window.location.href;
-                window.location.href = 'intent://' + url.replace(/^https?:\/\//, '') +
-                    '#Intent;scheme=https;package=com.android.chrome;end';
-                setTimeout(() => window.open(url, '_blank'), 1500);
-            });
-            return; 
-        }
-
-        /* ══════════════════════════════════════════
-           REFERENCIAS DOM
-        ══════════════════════════════════════════ */
         const viewer       = document.getElementById('visor-ar');
-        const pantalla     = document.getElementById('pantalla-inicio');
+        const pantalla     = document.getElementById('pantalla-previa');
         const boton        = document.getElementById('boton-activar-ar');
         const botonTexto   = document.getElementById('boton-texto');
         const arBtn        = document.getElementById('ar-button-nativo');
-        const hudAr        = document.getElementById('hud-ar');
-        const guia         = document.getElementById('mensaje-guia');
-        const guiaTexto    = document.getElementById('guia-texto');
         const loader       = document.getElementById('loader');
         const barra        = document.getElementById('barra-progreso');
-        const controlesAr  = document.getElementById('controles-ar');
-        const sliderEscala = document.getElementById('slider-escala');
-        const sliderRot    = document.getElementById('slider-rotacion');
-        const valEscala    = document.getElementById('val-escala');
-        const valRot       = document.getElementById('val-rotacion');
         const toast        = document.getElementById('toast');
         const toastMsg     = document.getElementById('toast-msg');
 
-        /* ══════════════════════════════════════════
-           ESTADO
-        ══════════════════════════════════════════ */
-        const MAQUETA_LARGO = 0.80; 
-        const MAQUETA_ANCHO = 0.40;  
-
-        let escala   = 1.0;
-        let escalaBase = 1.0; 
-        let rotacion = 0;
         let toastTimer;
-        let loaderEliminado = false;
-
-        /* ══════════════════════════════════════════
-           LOADER — con timeout corto y fallback robusto
-        ══════════════════════════════════════════ */
         let progresReal = false;
+        let loaderEliminado = false;
 
         const timeoutCarga = setTimeout(() => {
             console.warn('[AR] Timeout 15s — mostrando UI de todos modos');
@@ -461,43 +244,6 @@
                 boton.classList.remove('cargando');
                 botonTexto.textContent = 'ACTIVAR CÁMARA AR';
 
-                try {
-                    const dim = viewer.getDimensions();  
-                    console.log('[AR] Dimensiones modelo (m):', dim);
-
-                    if (dim && (dim.x > 0 || dim.z > 0)) {
-                        const modelLargo = Math.max(dim.x, dim.z);
-                        const modelAncho = Math.min(dim.x, dim.z);
-
-                        const factorLargo = MAQUETA_LARGO / modelLargo;
-                        const factorAncho = MAQUETA_ANCHO / modelAncho;
-                        escalaBase = Math.min(factorLargo, factorAncho);
-
-                        console.log('[AR] Modelo:', modelLargo.toFixed(3) + 'm x ' + modelAncho.toFixed(3) + 'm x ' + dim.y.toFixed(3) + 'm (alto)');
-                        console.log('[AR] Factor escala calculado:', escalaBase.toFixed(4));
-
-                        escala = escalaBase;
-
-                        const slMin = (escalaBase * 0.3).toFixed(3);
-                        const slMax = (escalaBase * 3.0).toFixed(3);
-                        sliderEscala.min = slMin;
-                        sliderEscala.max = slMax;
-                        sliderEscala.step = (escalaBase * 0.01).toFixed(4);
-                        sliderEscala.value = escalaBase;
-                        valEscala.textContent = '100%';  
-
-                        mostrarToast(
-                            '📐 Modelo: ' + modelLargo.toFixed(2) + 'm × ' + modelAncho.toFixed(2) + 'm' +
-                            '<br><small>Escalado a maqueta 80×40 cm (×' + escalaBase.toFixed(3) + ')</small>'
-                        );
-                    }
-                } catch (e) {
-                    console.warn('[AR] No se pudo leer dimensiones:', e);
-                }
-
-                controlesAr.classList.add('visible');
-                aplicar();
-
                 const anims = viewer.availableAnimations || [];
                 if (anims.length > 0) {
                     let idx = 0;
@@ -515,7 +261,7 @@
                 if (!viewer.canActivateAR) {
                     boton.classList.add('sin-ar');
                     botonTexto.textContent = '⚠️ AR no disponible';
-                    mostrarToast('⚠️ AR no compatible.<br><small>Usa Chrome en Android o Safari en iOS.</small>');
+                    mostrarToast('⚠️ AR no compatible en este dispositivo.');
                 }
             } else {
                 boton.classList.remove('cargando');
@@ -525,103 +271,20 @@
             }
         }
 
-        /* ══════════════════════════════════════════
-           ACTIVAR AR
-        ══════════════════════════════════════════ */
         boton.addEventListener('click', () => {
             if (boton.classList.contains('cargando') || boton.classList.contains('sin-ar')) return;
             if (!viewer.canActivateAR) {
-                mostrarToast('⚠️ AR no compatible.<br><small>Usa Chrome en Android o Safari en iOS.</small>');
+                mostrarToast('⚠️ AR no compatible.');
                 return;
             }
-            controlesAr.classList.remove('visible');
-            pantalla.classList.add('oculto');
-
-            setTimeout(() => {
-                guia.classList.add('visible');
-                arBtn.click();
-                setTimeout(() => guia.classList.remove('visible'), 5000);
-            }, 400);
+            
+            // Pausar rotación automática al entrar a AR
+            viewer.autoRotate = false;
+            
+            // Click fantasma al botón nativo de model-viewer
+            arBtn.click();
         });
 
-        /* ══════════════════════════════════════════
-           CICLO AR
-        ══════════════════════════════════════════ */
-        viewer.addEventListener('ar-status', ({ detail }) => {
-            switch (detail.status) {
-                case 'session-started':
-                    hudAr.classList.add('visible');
-                    guia.classList.add('visible');
-                    guiaTexto.innerHTML = 'Mueve la cámara lentamente<br>sobre la maqueta';
-                    break;
-
-                case 'object-placed':
-                    guia.classList.remove('visible');
-                    break;
-
-                case 'failed':
-                    ocultarHud();
-                    pantalla.classList.remove('oculto');
-                    controlesAr.classList.add('visible');
-                    mostrarToast('⚠️ No se pudo iniciar AR.<br><small>Verifica permisos de cámara.</small>');
-                    break;
-
-                case 'not-presenting':
-                    ocultarHud();
-                    pantalla.classList.remove('oculto');
-                    controlesAr.classList.add('visible');
-                    break;
-            }
-        });
-
-        viewer.addEventListener('ar-tracking', ({ detail }) => {
-            if (detail.status === 'not-tracking') {
-                guia.classList.add('visible');
-                guiaTexto.innerHTML = 'Apunta a una<br>superficie plana';
-            } else if (detail.status === 'tracking') {
-                guia.classList.remove('visible');
-            }
-        });
-
-        function ocultarHud() {
-            hudAr.classList.remove('visible');
-            guia.classList.remove('visible');
-        }
-
-        /* ══════════════════════════════════════════
-           CONTROLES
-        ══════════════════════════════════════════ */
-        function aplicar() {
-            viewer.setAttribute('scale', `${escala} ${escala} ${escala}`);
-            viewer.setAttribute('orientation', `0deg ${rotacion}deg 0deg`);
-        }
-
-        sliderEscala.addEventListener('input', () => {
-            escala = parseFloat(sliderEscala.value);
-            const pct = Math.round((escala / escalaBase) * 100);
-            valEscala.textContent = pct + '%';
-            aplicar();
-        });
-
-        sliderRot.addEventListener('input', () => {
-            rotacion = parseInt(sliderRot.value);
-            valRot.textContent = rotacion + '°';
-            aplicar();
-        });
-
-        document.getElementById('btn-reset').addEventListener('click', () => {
-            escala = escalaBase;
-            rotacion = 0;
-            sliderEscala.value = escalaBase;
-            sliderRot.value = 0;
-            valEscala.textContent = '100%';
-            valRot.textContent = '0°';
-            aplicar();
-        });
-
-        /* ══════════════════════════════════════════
-           TOAST
-        ══════════════════════════════════════════ */
         function mostrarToast(html) {
             toastMsg.innerHTML = html;
             toast.classList.add('visible');
